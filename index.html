@@ -190,7 +190,7 @@
         
         .quest-content { flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.03); transition: all 0.2s; overflow: hidden; }
         .quest-content[data-gender="boy"] { border: 2px solid #93c5fd; box-shadow: 0 0 8px rgba(147, 197, 253, 0.4); }
-        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(249, 168, 212, 0.4); }
+        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(244, 114, 182, 0.4); }
         
         .quest-content.gold-glow { border: 2px solid #fbbf24; background: linear-gradient(135deg, #1e293b 0%, #312e81 100%); box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); animation: pulse-gold 3s infinite; color: white; }
         .quest-content.gold-glow .quest-title { color: #fbbf24 !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -220,8 +220,6 @@
         .photo-thumbnail-wrapper.hidden-temp { opacity: 0; transform: scale(0); pointer-events: none; width: 0; height: 0; padding: 0; margin: 0; border: none; }
         
         .photo-loading { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: bold; z-index: 20; backdrop-filter: blur(2px); border-radius: 2px; }
-        .progress-bar-track { width: 80%; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 5px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width 0.2s ease-out; }
 
         .photo-thumbnail { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
         .delete-thumb-btn { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -504,7 +502,7 @@
                             </div>
                         </div>
                         
-                        <!-- [NEW] Pull-to-refresh Indicator -->
+                        <!-- [MODIFIED] Pull-to-refresh Indicator - More obvious downward movement -->
                         <div id="ptr-indicator">
                             <span><i class="fas fa-arrow-down"></i> 下拉更新</span>
                         </div>
@@ -560,6 +558,8 @@
                     <div class="text-center mb-6"><h3 class="text-2xl font-bold mb-1 text-slate-900" id="profile-name">User</h3><p class="text-xs text-slate-400 font-mono">10th Anniversary Trip</p></div>
                     <button onclick="switchMode('edit')" class="menu-btn"><i class="fas fa-pen text-slate-400"></i> 編輯資料</button>
                     
+                    <!-- [REMOVED] Sidebar Refresh Button -->
+
                     <button onclick="switchMode('trash')" class="menu-btn"><i class="fas fa-trash-restore text-slate-400"></i> 資源回收桶<span id="trash-count" class="text-xs bg-slate-200 px-2 py-0.5 rounded-full ml-auto">0</span></button>
                     
                     <div class="mb-6 border-t border-slate-100 pt-4 px-1">
@@ -1141,13 +1141,13 @@
                                  SoundSystem.playClick(); // Or a specific pop sound
                              }
                              indicator.style.opacity = '1';
-                             indicator.style.transform = `translateY(60px)`; // Lower it a bit more
+                             indicator.style.transform = `translateY(120px)`; // Much lower
                              indicator.innerHTML = '<span><i class="fas fa-arrow-down animate-bounce"></i> 放開以更新</span>';
                              indicator.style.color = '#ec4899'; // Pink
                          } else {
                              isReadyToRefresh = false;
                              indicator.style.opacity = Math.min(1, diff / ptrThreshold).toString();
-                             indicator.style.transform = `translateY(${diff/1.5}px)`;
+                             indicator.style.transform = `translateY(${diff}px)`; // 1:1 movement
                              indicator.innerHTML = '<span><i class="fas fa-sync-alt fa-spin"></i> 下拉更新...</span>';
                              indicator.style.color = '#94a3b8'; // Slate
                          }
@@ -1160,7 +1160,7 @@
                      
                      // Reset indicator
                      indicator.style.opacity = '0';
-                     indicator.style.transform = `translateY(-40px)`;
+                     indicator.style.transform = `translateY(-80px)`; // Reset to top CSS
                      
                      if (isReadyToRefresh) {
                          SoundSystem.playSuccess(); // Play sound on release
