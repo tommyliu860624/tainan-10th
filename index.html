@@ -21,6 +21,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- [FIREBASE SDK] Version 10.7.1 Compat (Easier for direct HTML usage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
     <style>
         /* Base Fonts */
@@ -222,7 +226,7 @@
         .quest-content { flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.03); transition: all 0.2s; overflow: hidden; }
         /* Only apply color border if data-gender is present and not empty */
         .quest-content[data-gender="boy"] { border: 2px solid #93c5fd; box-shadow: 0 0 8px rgba(147, 197, 253, 0.4); }
-        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(249, 168, 212, 0.4); }
+        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(244, 114, 182, 0.8); }
         
         .quest-content.gold-glow { border: 2px solid #fbbf24; background: linear-gradient(135deg, #1e293b 0%, #312e81 100%); box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); animation: pulse-gold 3s infinite; color: white; }
         .quest-content.gold-glow .quest-title { color: #fbbf24 !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -630,14 +634,38 @@
 
     <script>
         // ==========================================
-        //  FIREBASE CONFIGURATION (FUTURE USE)
-        //  將來升級即時同步時，我們會將 Firebase SDK 
-        //  與 Config 貼在這裡。目前使用 LocalStorage。
+        //  FIREBASE CONFIGURATION
+        //  請將您的 Firebase Config 貼在下方的大括號中
         // ==========================================
+        const firebaseConfig = {
+            // 在此貼上您的 config...
+            // apiKey: "...",
+            // authDomain: "...",
+            // projectId: "...",
+            // storageBucket: "...",
+            // messagingSenderId: "...",
+            // appId: "..."
+        };
+
+        // Initialize Firebase (Check if config is present)
+        let db;
+        let isFirebaseActive = false;
+
+        if (firebaseConfig.apiKey) {
+            try {
+                const app = firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                isFirebaseActive = true;
+                console.log("🔥 Firebase Initialized Successfully");
+            } catch (e) {
+                console.warn("Firebase Init Failed (Config might be empty):", e);
+            }
+        } else {
+            console.log("ℹ️ Running in LocalStorage Mode (No Firebase Config)");
+        }
 
         // [SECURITY] Access Control Config
         // 使用 Base64 編碼的 "0101" -> "MDEwMQ=="
-        // 這樣直接看原始碼時，不會第一眼就看到 0101
         const ACCESS_CODE_HASH = "MDEwMQ=="; 
         const ACCESS_KEY = "tainan_app_unlocked";
 
@@ -713,18 +741,34 @@
         let deleteTimeout;
         let toastTimeout;
         let tempEditGender = null;
-        let tempGender = null; // [FIX] Explicitly declare
+        let tempGender = null;
         let isMapFirstOpen = true; 
         let adminTapCount = 0;
         let adminTapTimer;
         let saveDebounceTimer;
 
-        // [PERSISTENCE] Persistence Manager - LocalStorage Version
-        // Note for Future Developer: Replace this object with Firebase calls for cloud sync.
+        // [PERSISTENCE] Hybrid Manager (LocalStorage + Firestore)
         const PersistenceManager = {
             storageKey: 'tainan_trip_data',
+            docId: 'tainan10th', // Firestore Document ID
             
-            // Save current DOM state to LocalStorage
+            // Initial Sync Listener
+            init: function() {
+                if (isFirebaseActive) {
+                    const docRef = db.collection('trips').doc(this.docId);
+                    docRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            // Update LocalStorage to keep offline cache fresh
+                            localStorage.setItem(this.storageKey, JSON.stringify(data));
+                            // Trigger re-render of current view
+                            renderAllQuests(); 
+                        }
+                    });
+                }
+            },
+            
+            // Save: Writes to Firestore if active, else LocalStorage
             save: function() {
                 try {
                     const allData = {};
@@ -734,7 +778,6 @@
                         
                         const quests = [];
                         container.querySelectorAll('.quest-item').forEach(item => {
-                            // Extract data
                             const timeVal = item.querySelector('.quest-time-input')?.value || '';
                             const titleVal = item.querySelector('.quest-title')?.innerText || '';
                             const descVal = item.querySelector('.quest-desc')?.innerText || '';
@@ -743,7 +786,6 @@
                             const manual = item.dataset.manual === 'true';
                             const gender = item.querySelector('.quest-content')?.dataset.gender || '';
                             
-                            // Photos
                             const photos = [];
                             item.querySelectorAll('.photo-thumbnail-wrapper').forEach(wrapper => {
                                 if(!wrapper.classList.contains('hidden-temp')) {
@@ -769,18 +811,25 @@
                         allData[i] = quests;
                     }
                     
-                    // Save to LocalStorage
+                    // 1. Save to LocalStorage (Always)
                     localStorage.setItem(this.storageKey, JSON.stringify(allData));
-                    console.log('✅ Auto-saved successfully');
+                    
+                    // 2. Sync to Firebase (If Active)
+                    if (isFirebaseActive) {
+                        db.collection('trips').doc(this.docId).set(allData, { merge: true })
+                            .then(() => console.log("☁️ Synced to Firebase"))
+                            .catch((err) => console.warn("Sync failed:", err));
+                    }
+
+                    console.log('✅ Auto-saved');
                 } catch(e) {
                     console.error('Save failed:', e);
                     if (e.name === 'QuotaExceededError') {
-                        showToast("⚠️ 儲存空間不足，部分資料可能未儲存");
+                        showToast("⚠️ 儲存空間不足");
                     }
                 }
             },
 
-            // Load data from LocalStorage or use Default
             load: function(dayIndex) {
                 const raw = localStorage.getItem(this.storageKey);
                 if(raw) {
@@ -795,12 +844,11 @@
                 return null;
             },
 
-            // Trigger safe debounced save (for text inputs)
             triggerDebouncedSave: function() {
                 if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
                 saveDebounceTimer = setTimeout(() => {
                     this.save();
-                }, 500); // 500ms delay
+                }, 500); 
             }
         };
 
@@ -823,7 +871,6 @@
                     const deviceTime = Date.now();
                     this.serverOffset = serverTime - deviceTime;
                     this.isSynced = true;
-                    console.log('✅ Time synced secure.');
                 } catch(e) {
                     console.warn("⚠️ Time sync failed or timed out.");
                     this.useLocalTime();
@@ -862,7 +909,6 @@
                     window.AudioContext = window.AudioContext || window.webkitAudioContext; 
                     this.ctx = new AudioContext(); 
                     
-                    // [UPDATED] Audio Chain with Compressor for Mobile
                     this.compressor = this.ctx.createDynamicsCompressor();
                     this.compressor.threshold.value = -50;
                     this.compressor.knee.value = 40;
@@ -890,7 +936,6 @@
             
             setBGMVolume: function(val) { 
                 if(this.bgmGainNode) { 
-                    // [UPDATED] Boost multiplier for mobile
                     const boostedVal = parseFloat(val) * 3.0; 
                     this.bgmGainNode.gain.setTargetAtTime(boostedVal, this.ctx.currentTime, 0.1); 
                 } 
@@ -912,7 +957,6 @@
                 osc.type = type; 
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
                 gain.gain.setValueAtTime(0, this.ctx.currentTime); 
-                // [UPDATED] Boost tone volume base
                 gain.gain.linearRampToValueAtTime(vol * 2.5, this.ctx.currentTime + attack); 
                 gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + attack + decay); 
                 osc.connect(gain); 
@@ -939,7 +983,7 @@
                 filter.frequency.value = 1000; 
                 filter.Q.value = 1; 
                 const gain = this.ctx.createGain(); 
-                gain.gain.setValueAtTime(vol * 3.0, this.ctx.currentTime); // [UPDATED] Boost noise
+                gain.gain.setValueAtTime(vol * 3.0, this.ctx.currentTime); 
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
                 noise.connect(filter); 
                 filter.connect(gain); 
@@ -978,8 +1022,6 @@
         // [SECURITY] Gatekeeper Check
         function checkAccess() {
             const input = document.getElementById('passcode');
-            // 驗證邏輯：比對 Base64 後的字串是否相符 (0101 -> MDEwMQ==)
-            // 這樣即使打開原始碼，也不會第一眼就看到 "0101"
             if (btoa(input.value) === ACCESS_CODE_HASH) {
                 localStorage.setItem(ACCESS_KEY, "true");
                 document.getElementById('page-lock').classList.add('unlocked');
@@ -1006,6 +1048,9 @@
                 SoundSystem.init();
                 SoundSystem.startMusic();
             }
+            
+            // 2. Initialize Persistence (Will sync if Firebase is configured)
+            PersistenceManager.init();
 
             renderAllQuests(); 
             const saved = localStorage.getItem('tainan_trip_player');
