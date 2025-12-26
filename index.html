@@ -22,10 +22,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-    <!-- [FIREBASE SDK] Version 10.7.1 Compat (Easier for direct HTML usage) -->
+    <!-- [FIREBASE SDK] Version 10.7.1 Compat (Only Firestore needed now) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
     
     <style>
         /* Base Fonts */
@@ -206,10 +205,7 @@
         .photo-thumbnail-wrapper[data-gender="girl"] { border: 3px solid #f472b6; box-shadow: 0 0 8px rgba(244, 114, 182, 0.8); }
         .photo-thumbnail-wrapper.hidden-temp { opacity: 0; transform: scale(0); pointer-events: none; width: 0; height: 0; padding: 0; margin: 0; border: none; }
         
-        /* [NEW] Photo Progress Overlay */
         .photo-loading { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: bold; z-index: 20; backdrop-filter: blur(2px); border-radius: 2px; }
-        .progress-bar-track { width: 80%; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 5px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width 0.2s ease-out; }
 
         .photo-thumbnail { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
         .delete-thumb-btn { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
@@ -611,16 +607,15 @@
 
         // Initialize Firebase (Check if config is present)
         let db;
-        let storage;
         let isFirebaseActive = false;
 
         if (firebaseConfig.apiKey) {
             try {
                 const app = firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
-                storage = firebase.storage();
+                // [MODIFIED] Removed Storage initialization
                 isFirebaseActive = true;
-                console.log("🔥 Firebase Initialized Successfully");
+                console.log("🔥 Firebase Initialized Successfully (Firestore Only)");
             } catch (e) {
                 console.warn("Firebase Init Failed (Config might be empty):", e);
             }
@@ -629,7 +624,6 @@
         }
 
         // [SECURITY] Access Control Config
-        // 使用 Base64 編碼的 "0101" -> "MDEwMQ=="
         const ACCESS_CODE_HASH = "MDEwMQ=="; 
         const ACCESS_KEY = "tainan_app_unlocked";
 
@@ -714,25 +708,21 @@
         // [PERSISTENCE] Hybrid Manager (LocalStorage + Firestore)
         const PersistenceManager = {
             storageKey: 'tainan_trip_data',
-            docId: 'tainan10th', // Firestore Document ID
+            docId: 'tainan10th', 
             
-            // Initial Sync Listener
             init: function() {
                 if (isFirebaseActive) {
                     const docRef = db.collection('trips').doc(this.docId);
                     docRef.onSnapshot((doc) => {
                         if (doc.exists) {
                             const data = doc.data();
-                            // Update LocalStorage to keep offline cache fresh
                             localStorage.setItem(this.storageKey, JSON.stringify(data));
-                            // Trigger re-render of current view
                             renderAllQuests(); 
                         }
                     });
                 }
             },
             
-            // Save: Writes to Firestore if active, else LocalStorage
             save: function() {
                 try {
                     const allData = {};
@@ -775,16 +765,21 @@
                         allData[i] = quests;
                     }
                     
-                    // 1. Save to LocalStorage (Always)
-                    localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                    // Check Data Size before saving
+                    const dataString = JSON.stringify(allData);
+                    const sizeInBytes = new Blob([dataString]).size;
                     
-                    // 2. Sync to Firebase (If Active)
+                    if (sizeInBytes > 950000) { // Safety buffer for 1MB limit
+                         showToast("⚠️ 警告：資料量接近上限，請勿再上傳大量照片");
+                    }
+                    
+                    localStorage.setItem(this.storageKey, dataString);
+                    
                     if (isFirebaseActive) {
                         db.collection('trips').doc(this.docId).set(allData, { merge: true })
                             .then(() => console.log("☁️ Synced to Firebase"))
                             .catch((err) => console.warn("Sync failed:", err));
                     }
-
                     console.log('✅ Auto-saved');
                 } catch(e) {
                     console.error('Save failed:', e);
@@ -794,7 +789,6 @@
                 }
             },
             
-            // [NEW] Hard Reset (Admin Only)
             resetCloud: function() {
                  if (isFirebaseActive) {
                     db.collection('trips').doc(this.docId).delete()
@@ -1054,6 +1048,7 @@
         });
 
         // [OPTIMIZATION] Image Compression Helper
+        // 800px width, 0.6 quality for Base64 storage
         function compressImage(file, maxWidth, quality, callback) {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -1075,9 +1070,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
                     
-                    // Output as JPEG with reduced quality OR blob if we wanted to upload binary
-                    // For Firebase Storage upload we want Blob for efficiency, but here we keep dataURL for compatibility flow
-                    // We'll convert to Blob in handlePhotoUpload if needed
+                    // Output as JPEG with reduced quality
                     const dataUrl = canvas.toDataURL('image/jpeg', quality);
                     callback(dataUrl);
                 };
@@ -1414,95 +1407,28 @@
             if (files && files.length > 0) { 
                 SoundSystem.playShutter(); 
                 Array.from(files).forEach(file => { 
-                    if (isFirebaseActive) {
-                        // [NEW] Use Firebase Storage
-                        showToast("☁️ 正在處理照片...");
-                        // Use higher quality compression for upload (1920px, 0.85)
-                        compressImage(file, 1920, 0.85, (dataUrl) => {
-                            // Convert DataURL to Blob for upload
-                            fetch(dataUrl)
-                                .then(res => res.blob())
-                                .then(blob => {
-                                    // [NEW] Create loading placeholder
-                                    const wrapper = document.createElement('div'); 
-                                    wrapper.className = 'photo-thumbnail-wrapper'; 
-                                    // Use dataUrl as preview immediately
-                                    wrapper.innerHTML = `
-                                        <img class="photo-thumbnail" src="${dataUrl}" style="opacity: 0.5">
-                                        <div class="photo-loading">
-                                            <span>上傳中 <span class="progress-text">0%</span></span>
-                                            <div class="progress-bar-track"><div class="progress-bar-fill"></div></div>
-                                        </div>
-                                    `;
-                                    photoArea.insertBefore(wrapper, input.parentElement);
-
-                                    const filename = `photos/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-                                    const ref = storage.ref().child(filename);
-                                    const uploadTask = ref.put(blob);
-                                    
-                                    uploadTask.on('state_changed', 
-                                        (snapshot) => {
-                                            // Progress Update
-                                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                                            const fill = wrapper.querySelector('.progress-bar-fill');
-                                            const text = wrapper.querySelector('.progress-text');
-                                            if(fill) fill.style.width = `${progress}%`;
-                                            if(text) text.innerText = `${Math.round(progress)}%`;
-                                        }, 
-                                        (error) => {
-                                            console.error("Upload failed:", error);
-                                            showToast("❌ 上傳失敗，請檢查網路");
-                                            wrapper.remove(); // Remove failed upload
-                                        }, 
-                                        () => {
-                                            uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                                                console.log("File available at", downloadURL);
-                                                // Update wrapper with final URL and data
-                                                const userGender = currentPlayer ? currentPlayer.gender : ''; 
-                                                wrapper.dataset.gender = userGender; 
-                                                wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
-                                                wrapper.dataset.created = new Date().toISOString();
-                                                
-                                                wrapper.innerHTML = `<img class="photo-thumbnail" src="${downloadURL}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`;
-                                                wrapper.onclick = function() { openPhotoModal(this); }; 
-                                                
-                                                // Apply gender border style now
-                                                if (userGender === 'boy') wrapper.style.border = '3px solid #60a5fa';
-                                                if (userGender === 'girl') wrapper.style.border = '3px solid #f472b6';
-                                                
-                                                showToast("✅ 照片已上傳雲端！");
-                                                PersistenceManager.save();
-                                            });
-                                        }
-                                    );
-                                });
-                        });
-                    } else {
-                        // [FALLBACK] LocalStorage (Low Quality)
-                        compressImage(file, 800, 0.7, (base64) => {
-                            try {
-                                const sizeInBytes = base64.length * 0.75;
-                                if (sizeInBytes > 500000) { 
-                                    console.warn("Image might be too large for local storage");
-                                }
+                    // [MODIFIED] Revert to Base64 (Local Compression) mode
+                    // Compress: Max width 800px, 0.6 quality (~30-50KB)
+                    compressImage(file, 800, 0.6, (base64) => {
+                        try {
+                            const wrapper = document.createElement('div'); 
+                            wrapper.className = 'photo-thumbnail-wrapper'; 
+                            const userGender = currentPlayer ? currentPlayer.gender : ''; 
+                            wrapper.dataset.gender = userGender; 
+                            wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+                            wrapper.dataset.created = new Date().toISOString();
     
-                                const wrapper = document.createElement('div'); 
-                                wrapper.className = 'photo-thumbnail-wrapper'; 
-                                const userGender = currentPlayer ? currentPlayer.gender : ''; 
-                                wrapper.dataset.gender = userGender; 
-                                wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
-                                wrapper.dataset.created = new Date().toISOString();
-        
-                                wrapper.onclick = function() { openPhotoModal(this); }; 
-                                wrapper.innerHTML = `<img class="photo-thumbnail" src="${base64}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
-                                photoArea.insertBefore(wrapper, input.parentElement); 
-                                showToast("照片已壓縮並暫存 (低畫質)！");
-                                PersistenceManager.save(); 
-                            } catch (e) {
-                                 showToast("⚠️ 儲存失敗：空間不足");
-                            }
-                        });
-                    }
+                            wrapper.onclick = function() { openPhotoModal(this); }; 
+                            wrapper.innerHTML = `<img class="photo-thumbnail" src="${base64}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
+                            photoArea.insertBefore(wrapper, input.parentElement); 
+                            showToast("照片已儲存！");
+                            
+                            // [SYNC] This saves the Base64 string directly to Firestore
+                            PersistenceManager.save(); 
+                        } catch (e) {
+                             showToast("⚠️ 儲存失敗：空間不足");
+                        }
+                    });
                 }); 
             } 
             input.value = ''; 
