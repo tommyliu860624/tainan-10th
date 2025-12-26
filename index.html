@@ -22,7 +22,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-    <!-- [FIREBASE SDK] Version 10.7.1 Compat -->
+    <!-- [FIREBASE SDK] Version 10.7.1 Compat (Easier for direct HTML usage) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
@@ -873,6 +873,7 @@
                     window.AudioContext = window.AudioContext || window.webkitAudioContext; 
                     this.ctx = new AudioContext(); 
                     
+                    // [UPDATED] Audio Chain with Compressor for Mobile
                     this.compressor = this.ctx.createDynamicsCompressor();
                     this.compressor.threshold.value = -50;
                     this.compressor.knee.value = 40;
@@ -900,6 +901,7 @@
             
             setBGMVolume: function(val) { 
                 if(this.bgmGainNode) { 
+                    // [UPDATED] Boost multiplier for mobile
                     const boostedVal = parseFloat(val) * 3.0; 
                     this.bgmGainNode.gain.setTargetAtTime(boostedVal, this.ctx.currentTime, 0.1); 
                 } 
@@ -921,6 +923,7 @@
                 osc.type = type; 
                 osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
                 gain.gain.setValueAtTime(0, this.ctx.currentTime); 
+                // [UPDATED] Boost tone volume base
                 gain.gain.linearRampToValueAtTime(vol * 2.5, this.ctx.currentTime + attack); 
                 gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + attack + decay); 
                 osc.connect(gain); 
@@ -947,7 +950,7 @@
                 filter.frequency.value = 1000; 
                 filter.Q.value = 1; 
                 const gain = this.ctx.createGain(); 
-                gain.gain.setValueAtTime(vol * 3.0, this.ctx.currentTime); 
+                gain.gain.setValueAtTime(vol * 3.0, this.ctx.currentTime); // [UPDATED] Boost noise
                 gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
                 noise.connect(filter); 
                 filter.connect(gain); 
@@ -1043,6 +1046,37 @@
             updateTrashCount();
             setInterval(() => { checkCelebration(); checkSurpriseEvent(); }, 1000);
         });
+
+        // [OPTIMIZATION] Image Compression Helper
+        function compressImage(file, maxWidth, quality, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = Math.round(height * (maxWidth / width));
+                        width = maxWidth;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Output as JPEG with reduced quality OR blob if we wanted to upload binary
+                    // For Firebase Storage upload we want Blob for efficiency, but here we keep dataURL for compatibility flow
+                    // We'll convert to Blob in handlePhotoUpload if needed
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    callback(dataUrl);
+                };
+            };
+        }
 
         // [PERSISTENCE] Modified Render Function
         function renderAllQuests() {
@@ -1374,20 +1408,74 @@
             if (files && files.length > 0) { 
                 SoundSystem.playShutter(); 
                 Array.from(files).forEach(file => { 
-                    safeSavePhoto(file, (base64) => {
-                        const wrapper = document.createElement('div'); 
-                        wrapper.className = 'photo-thumbnail-wrapper'; 
-                        const userGender = currentPlayer ? currentPlayer.gender : ''; 
-                        wrapper.dataset.gender = userGender; 
-                        wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
-                        wrapper.dataset.created = new Date().toISOString();
-
-                        wrapper.onclick = function() { openPhotoModal(this); }; 
-                        wrapper.innerHTML = `<img class="photo-thumbnail" src="${base64}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
-                        photoArea.insertBefore(wrapper, input.parentElement); 
-                        showToast("照片已儲存！現在可以打勾完成任務囉！");
-                        PersistenceManager.save(); // [AUTO-SAVE]
-                    });
+                    if (isFirebaseActive) {
+                        // [NEW] Use Firebase Storage
+                        showToast("☁️ 正在上傳高畫質照片...");
+                        // Use higher quality compression for upload (1920px, 0.85)
+                        compressImage(file, 1920, 0.85, (dataUrl) => {
+                            // Convert DataURL to Blob for upload
+                            fetch(dataUrl)
+                                .then(res => res.blob())
+                                .then(blob => {
+                                    const filename = `photos/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+                                    const ref = storage.ref().child(filename);
+                                    const uploadTask = ref.put(blob);
+                                    
+                                    uploadTask.on('state_changed', 
+                                        (snapshot) => {
+                                            // Optional: progress
+                                        }, 
+                                        (error) => {
+                                            console.error("Upload failed:", error);
+                                            showToast("❌ 上傳失敗，請檢查網路");
+                                        }, 
+                                        () => {
+                                            uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                                                console.log("File available at", downloadURL);
+                                                // Create thumbnail wrapper with URL
+                                                const wrapper = document.createElement('div'); 
+                                                wrapper.className = 'photo-thumbnail-wrapper'; 
+                                                const userGender = currentPlayer ? currentPlayer.gender : ''; 
+                                                wrapper.dataset.gender = userGender; 
+                                                wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+                                                wrapper.dataset.created = new Date().toISOString();
+                        
+                                                wrapper.onclick = function() { openPhotoModal(this); }; 
+                                                wrapper.innerHTML = `<img class="photo-thumbnail" src="${downloadURL}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
+                                                photoArea.insertBefore(wrapper, input.parentElement); 
+                                                showToast("✅ 照片已上傳雲端！");
+                                                PersistenceManager.save();
+                                            });
+                                        }
+                                    );
+                                });
+                        });
+                    } else {
+                        // [FALLBACK] LocalStorage (Low Quality)
+                        compressImage(file, 800, 0.7, (base64) => {
+                            try {
+                                const sizeInBytes = base64.length * 0.75;
+                                if (sizeInBytes > 500000) { 
+                                    console.warn("Image might be too large for local storage");
+                                }
+    
+                                const wrapper = document.createElement('div'); 
+                                wrapper.className = 'photo-thumbnail-wrapper'; 
+                                const userGender = currentPlayer ? currentPlayer.gender : ''; 
+                                wrapper.dataset.gender = userGender; 
+                                wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+                                wrapper.dataset.created = new Date().toISOString();
+        
+                                wrapper.onclick = function() { openPhotoModal(this); }; 
+                                wrapper.innerHTML = `<img class="photo-thumbnail" src="${base64}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
+                                photoArea.insertBefore(wrapper, input.parentElement); 
+                                showToast("照片已壓縮並暫存 (低畫質)！");
+                                PersistenceManager.save(); 
+                            } catch (e) {
+                                 showToast("⚠️ 儲存失敗：空間不足");
+                            }
+                        });
+                    }
                 }); 
             } 
             input.value = ''; 
