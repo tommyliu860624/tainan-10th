@@ -78,18 +78,28 @@
         .btn-tech-yellow.active { background: #eab308; color: #fff; }
         .btn-tech-purple { background: rgba(168, 85, 247, 0.1); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
 
-        /* General & Layout */
-        html, body {
-            /* [FIX] Use 100dvh to fix bottom whitespace issue on mobile browsers */
-            height: 100dvh; 
+        /* [FIX] iOS Safari Bottom Gap Fix */
+        html {
+            height: 100%;
+            width: 100%;
+            overflow: hidden; /* Prevent html scroll */
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            /* Force body to fill viewport and disable body scroll */
+            position: fixed; 
+            top: 0; 
+            left: 0; 
             width: 100%; 
+            height: 100%; 
+            overflow: hidden;
             margin: 0;
             padding: 0;
             background-color: var(--bg-color); 
             color: var(--text-color); 
             font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif; 
             -webkit-tap-highlight-color: transparent; 
-            overflow: hidden; /* Prevent body scroll, let containers scroll */
             transition: background-color 1s ease; 
         }
 
@@ -105,16 +115,16 @@
         .quest-title { font-size: 1.1rem !important; font-weight: 800 !important; color: #0f172a !important; line-height: 1.3; display: block; outline: none; border-bottom: 1px solid transparent; }
         .font-hand { font-family: 'Caveat', cursive; }
         
-        /* [FIX] Changed to fixed to prevent scrolling issues */
+        /* [FIX] Grid Background as Absolute Container */
         .grid-bg { 
             background-image: linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px); 
             background-size: 24px 24px; 
-            width: 100%; 
-            height: 100dvh; 
-            overflow: hidden; 
-            position: fixed; 
-            top: 0; 
+            position: absolute;
+            top: 0;
             left: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden; 
             z-index: 1; 
         }
 
