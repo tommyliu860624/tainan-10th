@@ -157,14 +157,18 @@
         
         .journal-paper { flex: 1; background: #fff; border: 2px solid var(--text-color); border-radius: 5px; box-shadow: 5px 5px 0 rgba(0,0,0,0.1); position: relative; overflow: hidden; margin-bottom: 15px; background-image: linear-gradient(#e2e8f0 1px, transparent 1px); background-size: 100% 28px; padding-top: 0; }
         
-        /* [NEW] Pull to refresh Indicator */
+        /* [MODIFIED] Pull to refresh Indicator - Clearer visuals */
         #ptr-indicator {
-            position: absolute; width: 100%; top: -40px; left: 0; height: 40px;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; color: var(--primary-pink); font-size: 0.9rem;
+            position: absolute; width: 100%; top: -60px; left: 0; height: 60px;
+            display: flex; align-items: flex-end; justify-content: center; padding-bottom: 10px;
+            font-weight: bold; color: #94a3b8; font-size: 0.9rem;
             transition: all 0.2s ease-out; opacity: 0; pointer-events: none; z-index: 100;
         }
-        #ptr-indicator.visible { opacity: 1; transform: translateY(50px); }
+        #ptr-indicator span {
+            background: white; padding: 6px 16px; border-radius: 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;
+            display: flex; align-items: center; gap: 6px;
+        }
 
         #day-cover { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); padding-bottom: 140px; z-index: 20; }
         #day-cover.active { display: flex; animation: fadeInPage 0.5s ease-out; }
@@ -501,7 +505,9 @@
                         </div>
                         
                         <!-- [NEW] Pull-to-refresh Indicator -->
-                        <div id="ptr-indicator">⬇️ 下拉更新</div>
+                        <div id="ptr-indicator">
+                            <span><i class="fas fa-arrow-down"></i> 下拉更新</span>
+                        </div>
 
                         <!-- [UPDATED] Empty Containers for Dynamic Injection -->
                         <div id="day-0" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 1: 跨年冒險夜</h3><div id="quest-list-0" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(0)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
@@ -554,9 +560,6 @@
                     <div class="text-center mb-6"><h3 class="text-2xl font-bold mb-1 text-slate-900" id="profile-name">User</h3><p class="text-xs text-slate-400 font-mono">10th Anniversary Trip</p></div>
                     <button onclick="switchMode('edit')" class="menu-btn"><i class="fas fa-pen text-slate-400"></i> 編輯資料</button>
                     
-                    <!-- [NEW] Refresh Button calling manualSync -->
-                    <button onclick="manualSync()" class="menu-btn text-blue-500 border-blue-200 bg-blue-50"><i class="fas fa-sync-alt"></i> 重新載入 (強制同步)</button>
-
                     <button onclick="switchMode('trash')" class="menu-btn"><i class="fas fa-trash-restore text-slate-400"></i> 資源回收桶<span id="trash-count" class="text-xs bg-slate-200 px-2 py-0.5 rounded-full ml-auto">0</span></button>
                     
                     <div class="mb-6 border-t border-slate-100 pt-4 px-1">
@@ -1115,11 +1118,13 @@
             let touchStartY = 0;
             const ptrThreshold = 80; // Distance to trigger refresh
             const indicator = document.getElementById('ptr-indicator');
-            
+            let isReadyToRefresh = false; // State tracking
+
             pages.forEach(page => {
                 page.addEventListener('touchstart', e => {
                     if (page.scrollTop === 0) {
                         touchStartY = e.touches[0].clientY;
+                        isReadyToRefresh = false;
                     }
                 }, {passive: true});
 
@@ -1129,13 +1134,22 @@
                     if (page.scrollTop === 0 && diff > 0) {
                          // Simple visual feedback
                          if (diff > ptrThreshold) {
+                             if (!isReadyToRefresh) {
+                                 // Crossed threshold just now
+                                 isReadyToRefresh = true;
+                                 if(navigator.vibrate) navigator.vibrate(20);
+                                 SoundSystem.playClick(); // Or a specific pop sound
+                             }
                              indicator.style.opacity = '1';
-                             indicator.style.transform = `translateY(45px)`; // Slide down
-                             indicator.innerText = "⬇️ 放開手指以更新";
+                             indicator.style.transform = `translateY(60px)`; // Lower it a bit more
+                             indicator.innerHTML = '<span><i class="fas fa-arrow-down animate-bounce"></i> 放開以更新</span>';
+                             indicator.style.color = '#ec4899'; // Pink
                          } else {
-                             indicator.style.opacity = '0.5';
-                             indicator.style.transform = `translateY(${Math.min(45, diff/2)}px)`;
-                             indicator.innerText = "⬇️ 下拉更新";
+                             isReadyToRefresh = false;
+                             indicator.style.opacity = Math.min(1, diff / ptrThreshold).toString();
+                             indicator.style.transform = `translateY(${diff/1.5}px)`;
+                             indicator.innerHTML = '<span><i class="fas fa-sync-alt fa-spin"></i> 下拉更新...</span>';
+                             indicator.style.color = '#94a3b8'; // Slate
                          }
                     }
                 }, {passive: true});
@@ -1148,9 +1162,12 @@
                      indicator.style.opacity = '0';
                      indicator.style.transform = `translateY(-40px)`;
                      
-                     if (page.scrollTop === 0 && diff > ptrThreshold) {
+                     if (isReadyToRefresh) {
+                         SoundSystem.playSuccess(); // Play sound on release
+                         if(navigator.vibrate) navigator.vibrate([30, 30]);
                          manualSync(); // Trigger seamless sync
                      }
+                     isReadyToRefresh = false;
                 });
             });
         }
