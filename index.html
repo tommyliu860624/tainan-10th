@@ -82,37 +82,8 @@
         .btn-tech-yellow.active { background: #eab308; color: #fff; }
         .btn-tech-purple { background: rgba(168, 85, 247, 0.1); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
 
-        /* [FIX] iOS Safari Bottom Gap & Layout Fixes */
-        html {
-            /* Ensure background covers everything */
-            background-color: var(--bg-color); 
-            /* Fix iOS height calculation */
-            height: 100%; 
-            width: 100%;
-            overflow: hidden; 
-            -webkit-text-size-adjust: 100%;
-            /* Disable pull-to-refresh / rubber banding on HTML */
-            overscroll-behavior: none;
-        }
-
-        body {
-            /* Force body to fill viewport rigidly */
-            position: fixed; 
-            inset: 0; /* top:0, right:0, bottom:0, left:0 */
-            width: 100%; 
-            height: 100dvh; /* Use dynamic viewport height */
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color); 
-            color: var(--text-color); 
-            font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif; 
-            -webkit-tap-highlight-color: transparent; 
-            /* Disable pull-to-refresh / rubber banding on Body */
-            overscroll-behavior: none;
-            transition: background-color 1s ease; 
-        }
-
+        /* General & Layout */
+        html, body { height: 100dvh; width: 100%; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; transition: background-color 1s ease; position: fixed; inset: 0; overscroll-behavior: none; }
         body.celebration-mode { background-color: transparent; --text-color: #e2e8f0; }
         body.celebration-mode .grid-bg { background-image: none; }
         body.celebration-mode .quest-item { background: rgba(255, 255, 255, 0.95); color: #2c3e50; }
@@ -126,17 +97,7 @@
         .font-hand { font-family: 'Caveat', cursive; }
         
         /* [FIX] Grid Background height using dvh */
-        .grid-bg { 
-            background-image: linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px); 
-            background-size: 24px 24px; 
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%; 
-            height: 100dvh; /* Ensure it covers dynamic viewport */
-            overflow: hidden; 
-            z-index: 1; 
-        }
+        .grid-bg { background-image: linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px); background-size: 24px 24px; position: absolute; top: 0; left: 0; width: 100%; height: 100dvh; overflow: hidden; z-index: 1; }
 
         .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; opacity: 0; transition: opacity 1.2s ease-in-out; flex-direction: column; z-index: 10; overflow: hidden; }
         .page.active { display: flex; opacity: 1; }
@@ -226,7 +187,7 @@
         .quest-content { flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.03); transition: all 0.2s; overflow: hidden; }
         /* Only apply color border if data-gender is present and not empty */
         .quest-content[data-gender="boy"] { border: 2px solid #93c5fd; box-shadow: 0 0 8px rgba(147, 197, 253, 0.4); }
-        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(244, 114, 182, 0.8); }
+        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(249, 168, 212, 0.4); }
         
         .quest-content.gold-glow { border: 2px solid #fbbf24; background: linear-gradient(135deg, #1e293b 0%, #312e81 100%); box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); animation: pulse-gold 3s infinite; color: white; }
         .quest-content.gold-glow .quest-title { color: #fbbf24 !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -638,13 +599,12 @@
         //  請將您的 Firebase Config 貼在下方的大括號中
         // ==========================================
         const firebaseConfig = {
-            // 在此貼上您的 config...
-            // apiKey: "...",
-            // authDomain: "...",
-            // projectId: "...",
-            // storageBucket: "...",
-            // messagingSenderId: "...",
-            // appId: "..."
+            apiKey: "AIzaSyCBeZGH-kb9xsL1m2WP4_Yrk0230qYCefc",
+            authDomain: "tainan-10th.firebaseapp.com",
+            projectId: "tainan-10th",
+            storageBucket: "tainan-10th.firebasestorage.app",
+            messagingSenderId: "904450850026",
+            appId: "1:904450850026:web:3bdc7fc879cce3d0b3eb93"
         };
 
         // Initialize Firebase (Check if config is present)
@@ -741,7 +701,7 @@
         let deleteTimeout;
         let toastTimeout;
         let tempEditGender = null;
-        let tempGender = null;
+        let tempGender = null; // [FIX] Explicitly declare
         let isMapFirstOpen = true; 
         let adminTapCount = 0;
         let adminTapTimer;
@@ -1022,6 +982,8 @@
         // [SECURITY] Gatekeeper Check
         function checkAccess() {
             const input = document.getElementById('passcode');
+            // 驗證邏輯：比對 Base64 後的字串是否相符 (0101 -> MDEwMQ==)
+            // 這樣即使打開原始碼，也不會第一眼就看到 "0101"
             if (btoa(input.value) === ACCESS_CODE_HASH) {
                 localStorage.setItem(ACCESS_KEY, "true");
                 document.getElementById('page-lock').classList.add('unlocked');
