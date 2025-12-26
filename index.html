@@ -22,7 +22,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 
-    <!-- [FIREBASE SDK] Version 10.7.1 Compat (Easier for direct HTML usage) -->
+    <!-- [FIREBASE SDK] Version 10.7.1 Compat -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
@@ -157,6 +157,15 @@
         
         .journal-paper { flex: 1; background: #fff; border: 2px solid var(--text-color); border-radius: 5px; box-shadow: 5px 5px 0 rgba(0,0,0,0.1); position: relative; overflow: hidden; margin-bottom: 15px; background-image: linear-gradient(#e2e8f0 1px, transparent 1px); background-size: 100% 28px; padding-top: 0; }
         
+        /* [NEW] Pull to refresh Indicator */
+        #ptr-indicator {
+            position: absolute; width: 100%; top: -40px; left: 0; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: var(--primary-pink); font-size: 0.9rem;
+            transition: all 0.2s ease-out; opacity: 0; pointer-events: none; z-index: 100;
+        }
+        #ptr-indicator.visible { opacity: 1; transform: translateY(50px); }
+
         #day-cover { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); padding-bottom: 140px; z-index: 20; }
         #day-cover.active { display: flex; animation: fadeInPage 0.5s ease-out; }
         .cover-title { font-family: 'Dancing Script', cursive; font-size: 2rem; color: #fdfbf7; margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
@@ -206,7 +215,6 @@
         .photo-thumbnail-wrapper[data-gender="girl"] { border: 3px solid #f472b6; box-shadow: 0 0 8px rgba(244, 114, 182, 0.8); }
         .photo-thumbnail-wrapper.hidden-temp { opacity: 0; transform: scale(0); pointer-events: none; width: 0; height: 0; padding: 0; margin: 0; border: none; }
         
-        /* [NEW] Photo Progress Overlay */
         .photo-loading { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; font-size: 0.7rem; font-weight: bold; z-index: 20; backdrop-filter: blur(2px); border-radius: 2px; }
         .progress-bar-track { width: 80%; height: 3px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 5px; overflow: hidden; }
         .progress-bar-fill { height: 100%; background: #4ade80; width: 0%; transition: width 0.2s ease-out; }
@@ -398,3 +406,1294 @@
         <input type="password" id="passcode" class="passcode-input" maxlength="4" placeholder="●●●●" inputmode="numeric">
         <button class="unlock-btn" onclick="checkAccess()">解 鎖</button>
     </section>
+
+    <canvas id="firework-overlay"></canvas>
+
+    <!-- [NEW] Offline Banner -->
+    <div id="offline-banner">
+        <i class="fas fa-wifi-slash mr-2"></i> 離線模式 - 功能可能受限
+    </div>
+
+    <div id="envelope-overlay" onclick="openEnvelope()">
+        <div class="envelope-container" id="envelope">
+            <div class="envelope-flap"></div>
+            <div class="envelope-body"><div class="wax-seal">10th</div></div>
+        </div>
+        <p class="text-white mt-12 font-mono text-sm tracking-widest animate-pulse">TAP TO OPEN</p>
+    </div>
+
+    <div class="grid-bg relative w-full">
+        <div id="home-decor">
+            <div class="absolute top-20 left-10 float-anim-slow" style="animation-delay: 0s;"><i class="fas fa-heart text-3xl text-pink-200 rotate-12 opacity-60"></i></div>
+            <div class="absolute bottom-40 right-10 float-anim-fast" style="animation-delay: 1s;"><i class="fas fa-camera text-4xl text-blue-200 -rotate-12 opacity-60"></i></div>
+            <div class="absolute top-32 right-12 float-anim-fast" style="animation-delay: 0.5s;"><i class="fas fa-star text-2xl text-yellow-200 rotate-45 opacity-60"></i></div>
+            <div class="absolute bottom-24 left-8 float-anim-slow" style="animation-delay: 2s;"><i class="fas fa-utensils text-2xl text-orange-200 -rotate-12 opacity-50"></i></div>
+            <div class="absolute top-1/2 left-4 float-anim-fast" style="animation-delay: 1.5s;"><i class="fas fa-map-signs text-3xl text-green-200 rotate-6 opacity-40"></i></div>
+            <div class="absolute top-16 right-1/3 float-anim-slow" style="animation-delay: 3s;"><i class="fas fa-cloud text-4xl text-white rotate-0 opacity-40"></i></div>
+            <div class="absolute bottom-1/3 right-6 float-anim-fast" style="animation-delay: 0.8s;"><i class="fas fa-music text-2xl text-purple-200 -rotate-6 opacity-50"></i></div>
+        </div>
+
+        <section id="page-home" class="page page-center active fade-in px-4">
+            <div class="text-center relative z-10">
+                <div class="badge-10 anim-up delay-1"><i class="fas fa-heart mr-1"></i>10th Anniversary</div>
+                <h1 class="main-title anim-up delay-2 my-4">台南<br>大冒險</h1>
+                <span class="text-slate-400 font-hand text-xl block anim-up delay-3">2025.12.31 - 2026.01.03</span>
+                <button onclick="handleStart()" class="start-btn text-slate-800 mt-8 anim-up delay-3">開始旅程 GO!</button>
+            </div>
+        </section>
+
+        <section id="page-setup" class="page page-center px-6">
+            <div class="w-full max-w-xs text-center bg-white/90 backdrop-blur-sm p-6 rounded-[2rem] border-2 border-slate-200 shadow-xl anim-pop">
+                <h2 class="text-xl font-bold mb-6 text-slate-700">選擇角色</h2>
+                <div class="flex justify-center gap-6 mb-8">
+                    <div class="avatar-option" onclick="selectAvatar('boy', this)"><i class="fas fa-face-smile text-blue-400"></i></div>
+                    <div class="avatar-option" onclick="selectAvatar('girl', this)"><i class="fas fa-face-smile-wink text-pink-400"></i></div>
+                </div>
+                <!-- [MODIFIED] Added oninput listener for validation -->
+                <input type="text" id="nickname" class="input-sketchy mb-8" placeholder="你的暱稱 (必填)" autocomplete="off" oninput="checkSetupValidity()">
+                <button onclick="confirmCharacter()" id="confirm-btn" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl opacity-50 transition-all" disabled>確認出發</button>
+            </div>
+        </section>
+
+        <section id="page-transition" class="page page-center bg-slate-900/90 backdrop-blur-sm z-50 text-white">
+            <div class="text-center anim-up flex flex-col items-center">
+                <div class="text-4xl mb-4 animate-bounce text-pink-400"><i class="fas fa-walking"></i></div>
+                <h2 class="text-2xl font-bold tracking-widest">旅程即將開始...</h2>
+                <p id="welcome-msg" class="text-sm text-slate-400 mt-4 font-mono"></p>
+                <div class="loader-bar-container"><div id="loader-fill" class="loader-bar-fill"></div></div>
+                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-tighter">Initializing Memories & Tainan Flavors</p>
+            </div>
+        </section>
+
+        <section id="page-main" class="page">
+            <header id="main-header" class="header-bar">
+                <div id="progress-fill" class="header-progress-bg"></div>
+                <div class="header-avatar" onclick="toggleProfile(true)"><i id="header-avatar-icon" class="fas fa-user"></i></div>
+                <div class="header-info-row">
+                    <span class="header-label-text">10th Anniversary</span>
+                    <div class="header-divider"></div>
+                    <div class="countdown-inline">
+                        <div class="mini-time-box"><span id="cd-days">00</span></div><span class="unit-text">d</span>
+                        <div class="mini-time-box"><span id="cd-hours">00</span></div><span class="unit-text">h</span>
+                        <div class="mini-time-box"><span id="cd-mins">00</span></div><span class="unit-text">m</span>
+                        <div class="mini-time-box" style="color:#ec4899"><span id="cd-secs">00</span></div><span class="unit-text">s</span>
+                    </div>
+                </div>
+                <div class="celebrate-text">Happy 10th Anniversary</div>
+            </header>
+
+            <main class="main-content">
+                <div class="journal-container">
+                    <div class="journal-tabs">
+                        <div class="journal-tab" id="tab-0" onclick="switchDayTab(0, this)">12/31</div>
+                        <div class="journal-tab" id="tab-1" onclick="switchDayTab(1, this)">1/1</div>
+                        <div class="journal-tab" id="tab-2" onclick="switchDayTab(2, this)">1/2</div>
+                        <div class="journal-tab" id="tab-3" onclick="switchDayTab(3, this)">1/3</div>
+                    </div>
+                    
+                    <div class="journal-paper">
+                        <div id="day-cover" class="active">
+                            <h3 class="cover-title">Adventure Begins Soon</h3>
+                            <p class="cover-subtitle">距離旅程啟動，還有一些時間...</p>
+                            <div class="mt-6 text-xs text-pink-100 border border-pink-400 px-4 py-1.5 rounded-full bg-pink-900/50 font-bold shadow-sm backdrop-blur-sm">
+                                <i class="fas fa-lock mr-1"></i> 請等到 12/31 再來打開喔！
+                            </div>
+                        </div>
+                        
+                        <!-- [NEW] Pull-to-refresh Indicator -->
+                        <div id="ptr-indicator">⬇️ 下拉更新</div>
+
+                        <!-- [UPDATED] Empty Containers for Dynamic Injection -->
+                        <div id="day-0" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 1: 跨年冒險夜</h3><div id="quest-list-0" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(0)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                        <div id="day-1" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 2: 10週年快樂</h3><div id="quest-list-1" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(1)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                        <div id="day-2" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 3: 共度良日</h3><div id="quest-list-2" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(2)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                        <div id="day-3" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 4: 永遠愛你</h3><div id="quest-list-3" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(3)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                    </div>
+                </div>
+
+                <button class="map-fab-btn" onclick="toggleMap(true)"><i class="fas fa-map-marked-alt"></i></button>
+
+                <div id="map-overlay" class="map-overlay">
+                    <button class="close-map-btn" onclick="toggleMap(false)"><i class="fas fa-times"></i></button>
+                    
+                    <!-- [NEW] Offline Placeholder -->
+                    <div id="map-offline-placeholder" class="map-offline-placeholder">
+                        <i class="fas fa-wifi-slash map-offline-icon"></i>
+                        <h3 class="text-xl font-bold text-slate-700">目前無法連線</h3>
+                        <p class="text-sm mt-2">地圖功能需要網路連線才能運作。<br>請檢查您的網路設定。</p>
+                        <button class="map-offline-btn" onclick="window.open('https://www.google.com/maps', '_blank')">
+                            開啟 Google Maps App
+                        </button>
+                    </div>
+
+                    <div id="gps-btn" class="gps-btn" onclick="locateUser()"><i class="fas fa-crosshairs"></i></div>
+                    <iframe id="gmap-frame" src="https://maps.google.com/maps?q=台南火車站&t=&z=14&ie=UTF8&iwloc=&output=embed" frameborder="0" style="border:0; width: 100%; height: 100%;" allowfullscreen></iframe>
+                    <div class="map-search-bar">
+                        <input type="search" id="map-search-input" class="search-input" placeholder="搜尋台南景點/美食..." onkeypress="if(event.key==='Enter') searchMap()">
+                        <button class="search-btn" onclick="searchMap()"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+            </main>
+        </section>
+
+        <div id="toast" class="flex items-center gap-3"><i class="fas fa-comment-dots"></i><span id="toast-msg">提示訊息</span><button id="toast-undo-btn" class="hidden bg-white/20 px-2 py-1 rounded text-xs border border-white/50 ml-2" onclick="undoDelete()">復原</button></div>
+
+        <div id="photo-view-modal" class="photo-view-modal" onclick="closePhotoModal()">
+            <div class="polaroid-large" onclick="event.stopPropagation()">
+                <img id="modal-img" src="">
+                <div class="polaroid-date-stamp" id="meta-date-text">2026.01.01</div>
+            </div>
+            <div id="modal-author"></div>
+        </div>
+
+        <div id="profile-modal" class="profile-modal" onclick="if(event.target === this) toggleProfile(false)">
+            <div class="profile-card">
+                <div class="text-right"><button onclick="toggleProfile(false)" class="text-slate-400 text-xl"><i class="fas fa-times"></i></button></div>
+                <div id="side-view" class="sidebar-section active mt-4">
+                    <div class="profile-avatar-large" id="profile-icon-large" onclick="handleAdminTrigger()"><i class="fas fa-user"></i></div>
+                    <div class="text-center mb-6"><h3 class="text-2xl font-bold mb-1 text-slate-900" id="profile-name">User</h3><p class="text-xs text-slate-400 font-mono">10th Anniversary Trip</p></div>
+                    <button onclick="switchMode('edit')" class="menu-btn"><i class="fas fa-pen text-slate-400"></i> 編輯資料</button>
+                    
+                    <!-- [NEW] Refresh Button calling manualSync -->
+                    <button onclick="manualSync()" class="menu-btn text-blue-500 border-blue-200 bg-blue-50"><i class="fas fa-sync-alt"></i> 重新載入 (強制同步)</button>
+
+                    <button onclick="switchMode('trash')" class="menu-btn"><i class="fas fa-trash-restore text-slate-400"></i> 資源回收桶<span id="trash-count" class="text-xs bg-slate-200 px-2 py-0.5 rounded-full ml-auto">0</span></button>
+                    
+                    <div class="mb-6 border-t border-slate-100 pt-4 px-1">
+                        <label class="text-xs text-slate-400 font-bold ml-1 mb-2 block">音量設定</label>
+                        <div class="flex items-center gap-3 mb-3"><i class="fas fa-music text-slate-400 w-4 text-center"></i><input type="range" min="0" max="1" step="0.1" value="0.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-pink-400" oninput="SoundSystem.setBGMVolume(this.value)"></div>
+                        <div class="flex items-center gap-3"><i class="fas fa-volume-up text-slate-400 w-4 text-center"></i><input type="range" min="0" max="1" step="0.1" value="0.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-400" oninput="SoundSystem.setSFXVolume(this.value)"></div>
+                    </div>
+
+                    <!-- [NEW] Backup & Restore Section -->
+                    <div class="backup-area">
+                        <label class="text-xs text-slate-400 font-bold ml-1">資料安全</label>
+                        <div class="backup-btn-row">
+                            <button class="backup-btn" onclick="exportData()"><i class="fas fa-download"></i> 匯出備份檔</button>
+                            <button class="backup-btn" onclick="importData()"><i class="fas fa-upload"></i> 還原備份檔</button>
+                        </div>
+                    </div>
+
+                    <div class="w-full border-t border-slate-100 my-4"></div>
+                    <div class="mt-auto w-full admin-only pb-8">
+                        <div class="admin-panel">
+                            <div class="text-[10px] text-slate-400 font-bold mb-2 uppercase tracking-widest border-b border-slate-600 pb-1"><i class="fas fa-terminal mr-1"></i>Developer Console</div>
+                            <button onclick="toggleUnlockDays()" id="btn-unlock-days" class="admin-btn btn-tech-green"><i class="fas fa-calendar-alt"></i> <span>解鎖日期限制</span></button>
+                            <button onclick="toggleUnlockMist()" id="btn-unlock-mist" class="admin-btn btn-tech-blue"><i class="fas fa-eye"></i> <span>解除任務迷霧</span></button>
+                            <button onclick="toggleCelebrateTest()" id="btn-celebrate" class="admin-btn btn-tech-yellow"><i class="fas fa-fire"></i> <span>啟動煙火特效</span></button>
+                            <button onclick="triggerSurpriseSequence()" class="admin-btn btn-tech-purple"><i class="fas fa-gift"></i> 觸發跨年驚喜</button>
+                            
+                            <!-- [NEW] Admin Reset Button -->
+                            <button onclick="adminResetGame()" class="admin-btn btn-tech-red mt-2"><i class="fas fa-skull"></i> 重置所有遊戲資料 (危險)</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="side-edit" class="sidebar-section mt-4">
+                    <h3 class="text-xl font-bold text-center mb-6">修改資料</h3>
+                    <div class="edit-avatar-group">
+                        <div class="edit-avatar-option" id="edit-boy" onclick="setEditGender('boy', this)"><i class="fas fa-face-smile text-blue-400"></i></div>
+                        <div class="edit-avatar-option" id="edit-girl" onclick="setEditGender('girl', this)"><i class="fas fa-face-smile-wink text-pink-400"></i></div>
+                    </div>
+                    <div class="w-full px-1 mb-6"><label class="text-xs text-slate-400 font-bold ml-1">暱稱</label><input type="text" id="edit-nickname" class="input-sketchy text-left w-full mt-1" value=""></div>
+                    <div class="flex gap-3 w-full mt-auto pb-8"><button onclick="switchMode('view')" class="flex-1 py-2 border border-slate-300 text-slate-500 rounded-lg text-sm font-bold">取消</button><button onclick="saveProfile()" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold shadow-lg">儲存</button></div>
+                </div>
+                <div id="side-trash" class="sidebar-section">
+                    <div class="flex items-center mb-4 border-b border-slate-100 pb-3"><button onclick="switchMode('view')" class="mr-3 text-slate-400 hover:text-slate-600"><i class="fas fa-chevron-left"></i></button><h3 class="text-lg font-bold text-slate-700">資源回收桶</h3></div>
+                    <div id="trash-list" class="trash-list"><div class="text-center text-slate-400 mt-10 text-sm">沒有被刪除的任務</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  FIREBASE CONFIGURATION
+        //  請將您的 Firebase Config 貼在下方的大括號中
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBeZGH-kb9xsL1m2WP4_Yrk0230qYCefc",
+            authDomain: "tainan-10th.firebaseapp.com",
+            projectId: "tainan-10th",
+            storageBucket: "tainan-10th.firebasestorage.app",
+            messagingSenderId: "904450850026",
+            appId: "1:904450850026:web:3bdc7fc879cce3d0b3eb93"
+        };
+
+        // Initialize Firebase (Check if config is present)
+        let db;
+        let storage;
+        let isFirebaseActive = false;
+
+        if (firebaseConfig.apiKey) {
+            try {
+                const app = firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                storage = firebase.storage();
+                isFirebaseActive = true;
+                console.log("🔥 Firebase Initialized Successfully");
+            } catch (e) {
+                console.warn("Firebase Init Failed (Config might be empty):", e);
+            }
+        } else {
+            console.log("ℹ️ Running in LocalStorage Mode (No Firebase Config)");
+        }
+
+        // [SECURITY] Access Control Config
+        // 使用 Base64 編碼的 "0101" -> "MDEwMQ=="
+        const ACCESS_CODE_HASH = "MDEwMQ=="; 
+        const ACCESS_KEY = "tainan_app_unlocked";
+
+        // [NEW] Security & Anti-Spoiler Module
+        
+        const QUEST_DB = {
+            0: [ // Day 1
+                { time: "14:19", title: "板橋車站 出發 🚅", desc: "搭乘高鐵 (833 車次) 往台南 (14:19-16:11)", location: "板橋車站" },
+                { time: "16:11", title: "高鐵台南站 轉乘", desc: "步行至「台鐵沙崙站」，轉乘沙崙線", location: "高鐵台南站" },
+                { time: "16:57", title: "抵達台南火車站", desc: "前往前站出口對面", location: "台南火車站" },
+                { time: "17:05", title: "詠心同行 取車 🛵", desc: "辦理取車手續 (前站出口對面)", location: "詠心同行" },
+                { time: "17:30", title: "泊樂行旅 Check-in 🏨", desc: "赤崁店放行李，稍作休息", location: "泊樂行旅赤崁店" },
+                { time: "18:15", title: "晚餐：瓦拉米鍋燒麵 🍜", desc: "老屋黃光氛圍，10 週年之旅的溫暖開場!", location: "Walami 瓦拉米" },
+                { time: "20:00", title: "國華街 / 神農街 🏮", desc: "買阿美嬤紅茶奶，逛日系文青選物店", location: "神農街" },
+                { time: "21:45", title: "宵夜時刻 🍗🍱🍟", desc: "大推阿力香雞排，台南經典鹽酥雞，帶回飯店好蒿爽爽", location: "700臺南市中西區金華路三段79號" },
+                { time: "23:00", title: "跨年倒數 ✨", desc: "準備好迎接新的一年了嗎?" },
+                { time: "01:00", title: "新年儀式：琴記牛肉湯 🥣", desc: "跨完年，散步出門喝碗熱湯", location: "琴記牛肉湯" }
+            ],
+            1: [ // Day 2
+                { time: "09:30", title: "早餐：阿杰蛋餅 + 吐司吐司 🍳", desc: "五妃街/健康路，雙拼方案超滿足", location: "阿杰手工蛋餅" },
+                { time: "10:45", title: "點心：懷舊小棧杏仁豆腐冰 🍧", desc: "五妃廟旁的經典好滋味", location: "懷舊小棧" },
+                { time: "12:00", title: "午餐：台南無名米糕 🍚", desc: "中山路巷弄，肉燥飯+滷味必點", location: "台南無名米糕" },
+                { time: "13:15", title: "質感選物：Ryme 🛍️", desc: "忠義路上的日系選物店", location: "Ryme" },
+                { time: "14:30", title: "青山茶行 + 叔炸甜不辣 🥤", desc: "買好茶與剛炸好的點心，準備前往海邊", location: "700臺南市中西區民生路二段117號1樓" },
+                { time: "16:00", title: "漁光島夕陽 🌅", desc: "還記得嗎?大學的我們也曾在這裡看夕陽呢!", location: "漁光島" },
+                { time: "18:30", title: "晚餐：阿村第二代牛肉湯 🥣", desc: "剛好回程順路吃保安路美食", location: "阿村第二代牛肉湯" },
+                { time: "20:00", title: "夜遊：河樂廣場 🌃", desc: "水影散步，享受夜晚涼風", location: "河樂廣場" }
+            ],
+            2: [ // Day 3
+                { time: "06:30", title: "早餐：幸福鍋貼 永福店 🥟", desc: "早起吃脆皮，在地人推薦", location: "幸福鍋貼永福店" },
+                { time: "08:00", title: "公務：中西區區公所 🏛️", desc: "辦理自然人憑證", location: "中西區區公所" },
+                { time: "09:00", title: "巷弄老時光：寮國咖啡 ☕", desc: "坐在騎樓喝杯炭焙咖啡，享受早晨寧靜", location: "700臺南市中西區中山路79巷60號" },
+                { time: "11:00", title: "拍照：林百貨頂樓神社 ⛩️", desc: "開門第一批，避開人潮", location: "林百貨" },
+                { time: "12:15", title: "午餐：粼粼 + 許願所 🍽️", desc: "現場排隊，等待時可逛隔壁許願所", location: "粼粼" },
+                { time: "14:00", title: "衛民街老宅聚落 🏘️", desc: "餐桌上的鹿早 ➔ 唐恩 ➔ 鹿早茶屋", location: "餐桌上的鹿早" },
+                { time: "17:00", title: "西市場之夜 🏮", desc: "情懷合作社、蜷尾家，感受夜晚氛圍", location: "西門商場（大菜市）" },
+                { time: "19:45", title: "晚餐：錦町燒餃 🥟", desc: "日式居酒屋風格煎餃", location: "錦町燒餃" },
+                { time: "21:00", title: "完美句點：謝家八寶冰 🍧", desc: "吃完煎餃走過去吃冰，再走回飯店", location: "謝家八寶冰" }
+            ],
+            3: [ // Day 4
+                { time: "08:30", title: "早餐：勝利早點 🥐", desc: "台南人氣早餐，蔥餅、豬肉蛋餅必點", location: "勝利早點" },
+                { time: "09:30", title: "整理行李 🧳", desc: "回房整理戰利品，準備退房" },
+                { time: "11:00", title: "退房 & 寄放行李 🏨", desc: "泊樂行旅退房 ➔ 詠心同行寄放" },
+                { time: "12:00", title: "甜點：Wakamodog ☕", desc: "週六限定，12點準時報到", location: "Wakamodog" },
+                { time: "13:45", title: "又又美 & 旭峯號 📸", desc: "復古相機店與老藥行巡禮", location: "又又美" },
+                { time: "15:15", title: "午餐：丹丹漢堡 成功店 🍔", desc: "南霸天經典美味", location: "丹丹漢堡成功店" },
+                { time: "16:30", title: "最終採買：葡吉 or 連得堂 🎁", desc: "羅宋麵包或煎餅當戰利品", location: "台南葡吉麵包店" },
+                { time: "17:30", title: "還車 & 取行李 🛵", desc: "回到詠心同行還車", location: "詠心同行" },
+                { time: "18:00", title: "賦歸：台南火車站 🚂", desc: "18:00-22:11 台南到台北，自強(3000) 146", location: "台南火車站" }
+            ]
+        };
+
+        function safeDecode(str) {
+            try { return decodeURIComponent(atob(str).split('').map(function(c) { return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2); }).join('')); } 
+            catch(e) { return str; } 
+        }
+
+        let currentPlayer = null;
+        let forceUnlockDays = false; 
+        let forceUnlockMist = false;
+        let isCelebrating = false; 
+
+        const anniversaryDate = new Date('2026-01-01T00:00:00');
+        const unlockDates = [
+            new Date('2025-12-31T00:00:00'),
+            new Date('2026-01-01T00:00:00'),
+            new Date('2026-01-02T00:00:00'),
+            new Date('2026-01-03T00:00:00')
+        ];
+        
+        let deletedQuests = []; 
+        let pendingPhotoDeletions = []; 
+        let deleteTimeout;
+        let toastTimeout;
+        let tempEditGender = null;
+        let tempGender = null;
+        let isMapFirstOpen = true; 
+        let adminTapCount = 0;
+        let adminTapTimer;
+        let saveDebounceTimer;
+
+        // [PERSISTENCE] Hybrid Manager (LocalStorage + Firestore)
+        const PersistenceManager = {
+            storageKey: 'tainan_trip_data',
+            docId: 'tainan10th', // Firestore Document ID
+            
+            // Initial Sync Listener
+            init: function() {
+                if (isFirebaseActive) {
+                    const docRef = db.collection('trips').doc(this.docId);
+                    docRef.onSnapshot((doc) => {
+                        if (doc.exists) {
+                            const data = doc.data();
+                            // Update LocalStorage to keep offline cache fresh
+                            localStorage.setItem(this.storageKey, JSON.stringify(data));
+                            // Trigger re-render of current view
+                            renderAllQuests(); 
+                        }
+                    });
+                }
+            },
+            
+            // [NEW] Manual Cloud Fetch (Seamless Update)
+            fetch: async function() {
+                if (isFirebaseActive) {
+                    try {
+                        const doc = await db.collection('trips').doc(this.docId).get();
+                        if (doc.exists) {
+                            const data = doc.data();
+                            localStorage.setItem(this.storageKey, JSON.stringify(data));
+                            renderAllQuests(); // Update UI in place
+                            return true;
+                        }
+                    } catch (e) {
+                        console.error("Manual fetch failed", e);
+                        throw e;
+                    }
+                } else {
+                    renderAllQuests(); // Just re-render local
+                    return true;
+                }
+                return false;
+            },
+            
+            // Save: Writes to Firestore if active, else LocalStorage
+            save: function() {
+                try {
+                    const allData = {};
+                    for(let i=0; i<4; i++) {
+                        const container = document.getElementById(`quest-list-${i}`);
+                        if(!container) continue;
+                        
+                        const quests = [];
+                        container.querySelectorAll('.quest-item').forEach(item => {
+                            const timeVal = item.querySelector('.quest-time-input')?.value || '';
+                            const titleVal = item.querySelector('.quest-title')?.innerText || '';
+                            const descVal = item.querySelector('.quest-desc')?.innerText || '';
+                            const isCompleted = item.classList.contains('completed');
+                            const isLocked = item.classList.contains('locked');
+                            const manual = item.dataset.manual === 'true';
+                            const gender = item.querySelector('.quest-content')?.dataset.gender || '';
+                            
+                            const photos = [];
+                            item.querySelectorAll('.photo-thumbnail-wrapper').forEach(wrapper => {
+                                if(!wrapper.classList.contains('hidden-temp')) {
+                                    photos.push({
+                                        src: wrapper.querySelector('img').src,
+                                        gender: wrapper.dataset.gender || '',
+                                        created: wrapper.dataset.created || new Date().toISOString()
+                                    });
+                                }
+                            });
+
+                            quests.push({
+                                time: timeVal,
+                                title: titleVal,
+                                desc: descVal,
+                                completed: isCompleted,
+                                locked: isLocked,
+                                manual: manual,
+                                gender: gender,
+                                photos: photos
+                            });
+                        });
+                        allData[i] = quests;
+                    }
+                    
+                    // 1. Save to LocalStorage (Always)
+                    localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                    
+                    // 2. Sync to Firebase (If Active)
+                    if (isFirebaseActive) {
+                        db.collection('trips').doc(this.docId).set(allData, { merge: true })
+                            .then(() => console.log("☁️ Synced to Firebase"))
+                            .catch((err) => console.warn("Sync failed:", err));
+                    }
+
+                    console.log('✅ Auto-saved');
+                } catch(e) {
+                    console.error('Save failed:', e);
+                    if (e.name === 'QuotaExceededError') {
+                        showToast("⚠️ 儲存空間不足");
+                    }
+                }
+            },
+            
+            // [NEW] Hard Reset (Admin Only)
+            resetCloud: function() {
+                 if (isFirebaseActive) {
+                    db.collection('trips').doc(this.docId).delete()
+                        .then(() => console.log("🔥 Cloud data reset"))
+                        .catch((err) => console.error(err));
+                 }
+            },
+
+            load: function(dayIndex) {
+                const raw = localStorage.getItem(this.storageKey);
+                if(raw) {
+                    try {
+                        const data = JSON.parse(raw);
+                        return data[dayIndex] || null;
+                    } catch(e) {
+                        console.error('Load failed:', e);
+                        return null;
+                    }
+                }
+                return null;
+            },
+
+            triggerDebouncedSave: function() {
+                if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
+                saveDebounceTimer = setTimeout(() => {
+                    this.save();
+                }, 500); 
+            }
+        };
+
+        window.onerror = function(msg, url, line, col, error) {
+            console.error("Global Error Caught:", msg, error);
+            showToast("⚠️ 發生異常，系統已自動修復");
+            return false; 
+        };
+
+        const TimeManager = {
+            serverOffset: 0,
+            isSynced: false,
+            async init() {
+                if (!navigator.onLine) { this.useLocalTime(); return; }
+                try {
+                    const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Taipei', { signal: AbortSignal.timeout(3000) });
+                    if (!res.ok) throw new Error("Time API Failed");
+                    const data = await res.json();
+                    const serverTime = new Date(data.datetime).getTime();
+                    const deviceTime = Date.now();
+                    this.serverOffset = serverTime - deviceTime;
+                    this.isSynced = true;
+                } catch(e) {
+                    console.warn("⚠️ Time sync failed or timed out.");
+                    this.useLocalTime();
+                }
+            },
+            useLocalTime() { this.isSynced = false; this.serverOffset = 0; },
+            now() { return new Date(Date.now() + this.serverOffset); }
+        };
+
+        const OfflineManager = {
+            init() {
+                window.addEventListener('online', () => this.updateStatus(true));
+                window.addEventListener('offline', () => this.updateStatus(false));
+                this.updateStatus(navigator.onLine);
+            },
+            updateStatus(isOnline) {
+                const banner = document.getElementById('offline-banner');
+                const mapPlaceholder = document.getElementById('map-offline-placeholder');
+                const mapFrame = document.getElementById('gmap-frame');
+                if (isOnline) {
+                    banner.classList.remove('active');
+                    if (mapPlaceholder && mapFrame) { mapPlaceholder.classList.remove('active'); mapFrame.style.display = 'block'; }
+                    TimeManager.init();
+                } else {
+                    banner.classList.add('active');
+                }
+            }
+        };
+
+        const SoundSystem = {
+            ctx: null, masterGain: null, bgmGainNode: null, sfxGainNode: null, compressor: null,
+            isMuted: false, musicNextNoteTime: 0, musicSchedulerTimer: null, isPlayingMusic: false,
+            
+            init: function() { 
+                if(!this.ctx) { 
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext; 
+                    this.ctx = new AudioContext(); 
+                    
+                    // [UPDATED] Audio Chain with Compressor for Mobile
+                    this.compressor = this.ctx.createDynamicsCompressor();
+                    this.compressor.threshold.value = -50;
+                    this.compressor.knee.value = 40;
+                    this.compressor.ratio.value = 12;
+                    this.compressor.attack.value = 0;
+                    this.compressor.release.value = 0.25;
+                    this.compressor.connect(this.ctx.destination);
+
+                    this.masterGain = this.ctx.createGain(); 
+                    this.masterGain.gain.value = 1.0; 
+                    this.masterGain.connect(this.compressor); 
+                    
+                    this.bgmGainNode = this.ctx.createGain(); 
+                    this.bgmGainNode.gain.value = 0.8; 
+                    this.bgmGainNode.connect(this.masterGain); 
+                    
+                    this.sfxGainNode = this.ctx.createGain(); 
+                    this.sfxGainNode.gain.value = 0.8; 
+                    this.sfxGainNode.connect(this.masterGain); 
+                } 
+                this.resumeCtx(); 
+            },
+            
+            resumeCtx: function() { if (this.ctx && this.ctx.state === 'suspended') { this.ctx.resume(); } },
+            
+            setBGMVolume: function(val) { 
+                if(this.bgmGainNode) { 
+                    // [UPDATED] Boost multiplier for mobile
+                    const boostedVal = parseFloat(val) * 3.0; 
+                    this.bgmGainNode.gain.setTargetAtTime(boostedVal, this.ctx.currentTime, 0.1); 
+                } 
+            },
+            
+            setSFXVolume: function(val) { 
+                if(this.sfxGainNode) { 
+                    const boostedVal = parseFloat(val) * 3.0; 
+                    this.sfxGainNode.gain.setTargetAtTime(boostedVal, this.ctx.currentTime, 0.1); 
+                    if (this.ctx.currentTime > 0.1) { this.playTone(1200, 'sine', 0.05, 0.05, 0.001, 0.03); } 
+                } 
+            },
+            
+            playTone: function(freq, type, duration, vol=0.3, attack=0.01, decay=0.1) { 
+                if(this.isMuted || !this.ctx) return; 
+                this.resumeCtx(); 
+                const osc = this.ctx.createOscillator(); 
+                const gain = this.ctx.createGain(); 
+                osc.type = type; 
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
+                gain.gain.setValueAtTime(0, this.ctx.currentTime); 
+                // [UPDATED] Boost tone volume base
+                gain.gain.linearRampToValueAtTime(vol * 2.5, this.ctx.currentTime + attack); 
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + attack + decay); 
+                osc.connect(gain); 
+                gain.connect(this.sfxGainNode); 
+                osc.start(); 
+                osc.stop(this.ctx.currentTime + duration + 0.5); 
+            },
+            
+            playNoise: function(duration, vol=0.3, type='white') { 
+                if(this.isMuted || !this.ctx) return; 
+                this.resumeCtx(); 
+                const bufferSize = this.ctx.sampleRate * duration; 
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate); 
+                const data = buffer.getChannelData(0); 
+                let lastOut = 0; 
+                for (let i = 0; i < bufferSize; i++) { 
+                    if (type === 'white') { data[i] = Math.random() * 2 - 1; } 
+                    else { const white = Math.random() * 2 - 1; data[i] = (lastOut + (0.02 * white)) / 1.02; lastOut = data[i]; data[i] *= 3.5; } 
+                } 
+                const noise = this.ctx.createBufferSource(); 
+                noise.buffer = buffer; 
+                const filter = this.ctx.createBiquadFilter(); 
+                filter.type = 'bandpass'; 
+                filter.frequency.value = 1000; 
+                filter.Q.value = 1; 
+                const gain = this.ctx.createGain(); 
+                gain.gain.setValueAtTime(vol * 3.0, this.ctx.currentTime); // [UPDATED] Boost noise
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
+                noise.connect(filter); 
+                filter.connect(gain); 
+                gain.connect(this.sfxGainNode); 
+                noise.start(); 
+            },
+            
+            playError: function() { if(this.isMuted) return; this.playTone(150, 'triangle', 0.1, 0.4, 0.01, 0.1); setTimeout(() => this.playTone(100, 'sine', 0.1, 0.4, 0.01, 0.15), 20); },
+            playClick: function() { if(this.isMuted) return; this.playTone(1200, 'sine', 0.05, 0.2, 0.001, 0.03); },
+            playTabTap: function() { if(this.isMuted) return; this.playTone(800, 'sine', 0.08, 0.3, 0.005, 0.05); },
+            playPageTurn: function() { if(this.isMuted) return; this.playNoise(0.15, 0.2); },
+            playSuccess: function() { if(this.isMuted) return; const notes = [523.25, 659.25, 783.99, 1046.50, 1174.66]; notes.forEach((freq, i) => { setTimeout(() => { this.playTone(freq, 'sine', 0.6, 0.2, 0.02, 0.3); }, i * 40); }); },
+            playDelete: function() { if(this.isMuted) return; this.playTone(400, 'triangle', 0.2, 0.25, 0.01, 0.2); setTimeout(() => this.playTone(200, 'triangle', 0.2, 0.25, 0.01, 0.2), 100); },
+            playShutter: function() { if(this.isMuted) return; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.frequency.setValueAtTime(2000, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.05); gain.gain.setValueAtTime(0.5, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05); osc.connect(gain); gain.connect(this.sfxGainNode); osc.start(); osc.stop(this.ctx.currentTime + 0.06); this.playNoise(0.08, 0.6); },
+            playMagic: function() { if(this.isMuted) return; const notes = [440, 554, 659, 880, 1108, 1318]; notes.forEach((freq, i) => { setTimeout(() => { this.playTone(freq, 'sine', 1.0, 0.1, 0.05, 0.8); }, i * 50); }); this.playNoise(1.5, 0.1, 'pink'); },
+            
+            bgmTempo: 110, currentChordIndex: 0, noteCounter: 0,
+            progressionNormal: [[261.63, 329.63, 392.00, 493.88], [220.00, 261.63, 329.63, 392.00], [174.61, 220.00, 261.63, 329.63], [196.00, 246.94, 293.66, 349.23]],
+            
+            startMusic: function() { if(this.isMuted || this.isPlayingMusic) return; this.isPlayingMusic = true; this.resumeCtx(); this.musicNextNoteTime = this.ctx.currentTime + 0.1; this.scheduleMusic(); },
+            
+            scheduleMusic: function() { if (!this.isPlayingMusic) return; const secondsPerBeat = 60.0 / this.bgmTempo; while (this.musicNextNoteTime < this.ctx.currentTime + 1.0) { this.playWaltzStep(this.musicNextNoteTime); this.musicNextNoteTime += secondsPerBeat; } this.musicSchedulerTimer = requestAnimationFrame(this.scheduleMusic.bind(this)); },
+            
+            playWaltzStep: function(time) { const chord = this.progressionNormal[this.currentChordIndex]; const beatInBar = this.noteCounter % 3; if (beatInBar === 0) { this.playNote(chord[0] / 2, time, 0.6, 'triangle'); if (this.noteCounter % 12 === 0) { this.currentChordIndex = (this.currentChordIndex + 1) % this.progressionNormal.length; } } else { const note = chord[Math.floor(Math.random() * 4)]; if(Math.random() > 0.2) { this.playNote(note * 2, time, 0.3, 'sine'); } } this.noteCounter++; },
+            
+            playNote: function(freq, time, duration, wave) { const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.type = wave; osc.frequency.setValueAtTime(freq, time); gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.25, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, time + duration + 1.5); osc.connect(gain); gain.connect(this.bgmGainNode); osc.start(time); osc.stop(time + duration + 2.0); },
+            
+            stopMusic: function() { this.isPlayingMusic = false; if(this.musicSchedulerTimer) cancelAnimationFrame(this.musicSchedulerTimer); }
+        };
+
+        function triggerSurpriseSequence() { toggleProfile(false); const overlay = document.getElementById('envelope-overlay'); const envelope = document.getElementById('envelope'); overlay.classList.add('active'); envelope.classList.remove('open'); SoundSystem.playTabTap(); }
+        function openEnvelope() { const envelope = document.getElementById('envelope'); if (envelope.classList.contains('open')) return; envelope.classList.add('open'); SoundSystem.playPageTurn(); setTimeout(() => { SoundSystem.playMagic(); const overlay = document.getElementById('envelope-overlay'); overlay.classList.remove('active'); injectSurpriseQuest(); switchDayTab(0, document.getElementById('tab-0')); setTimeout(() => { const q = document.getElementById('quest-surprise'); if(q) q.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500); }, 800); }
+        function checkSurpriseEvent() { const now = TimeManager.now(); const surpriseTime = new Date('2026-01-01T00:00:00'); if (now >= surpriseTime && !document.getElementById('quest-surprise')) { if (SoundSystem.ctx && SoundSystem.ctx.state === 'running') { const overlay = document.getElementById('envelope-overlay'); if (!overlay.classList.contains('active')) { triggerSurpriseSequence(); } } } }
+        function injectSurpriseQuest() { if (document.getElementById('quest-surprise')) return; const container = document.getElementById('quest-list-0'); if(!container) return; const div = document.createElement('div'); div.id = 'quest-surprise'; div.className = 'quest-item'; div.setAttribute('data-manual', 'true'); div.innerHTML = `<div class="quest-checkbox" onclick="toggleTask(this)"><i class="fas fa-check"></i></div><div class="quest-content gold-glow"><div class="flex items-center gap-2 mb-1"><input type="time" class="quest-time-input" value="00:00"><button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button></div><h4 class="quest-title" contenteditable="true">✨10 週年快樂✨</h4><p class="quest-desc" contenteditable="true">新的一年，請多多指教!</p><div class="quest-photo-area"><label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label></div></div><div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div></div>`; const questItems = container.querySelectorAll('.quest-item'); const beefSoup = questItems[questItems.length - 1]; if(beefSoup) { container.insertBefore(div, beefSoup); } else { container.insertBefore(div, container.lastElementChild); } div.classList.add('anim-pop'); setTimeout(() => div.classList.remove('anim-pop'), 500); }
+
+        // [SECURITY] Gatekeeper Check
+        function checkAccess() {
+            const input = document.getElementById('passcode');
+            // 驗證邏輯：比對 Base64 後的字串是否相符 (0101 -> MDEwMQ==)
+            // 這樣即使打開原始碼，也不會第一眼就看到 "0101"
+            if (btoa(input.value) === ACCESS_CODE_HASH) {
+                localStorage.setItem(ACCESS_KEY, "true");
+                document.getElementById('page-lock').classList.add('unlocked');
+                SoundSystem.init();
+                SoundSystem.startMusic();
+                SoundSystem.playSuccess();
+            } else {
+                input.classList.add('error');
+                SoundSystem.playError();
+                if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                setTimeout(() => input.classList.remove('error'), 400);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            OfflineManager.init();
+            
+            // 1. Check Security Gate
+            const isUnlocked = localStorage.getItem(ACCESS_KEY) === "true";
+            if (!isUnlocked) {
+                // Stay on lock screen
+            } else {
+                document.getElementById('page-lock').classList.add('unlocked');
+                SoundSystem.init();
+                SoundSystem.startMusic();
+            }
+            
+            // 2. Initialize Persistence (Will sync if Firebase is configured)
+            PersistenceManager.init();
+            
+            // [NEW] Init Pull-to-refresh
+            initPullToRefresh();
+
+            renderAllQuests(); 
+            const saved = localStorage.getItem('tainan_trip_player');
+            if(saved) { currentPlayer = JSON.parse(saved); handleStart(); }
+            initFireworkEngine();
+            
+            const enableAudio = () => { SoundSystem.init(); SoundSystem.startMusic(); document.removeEventListener('click', enableAudio); document.removeEventListener('touchstart', enableAudio); };
+            document.addEventListener('click', enableAudio); document.addEventListener('touchstart', enableAudio);
+            
+            document.body.addEventListener('change', (e) => { 
+                if (e.target.classList.contains('quest-time-input')) { 
+                    const btn = e.target.parentElement.querySelector('.sort-confirm-btn'); if (btn) btn.classList.remove('hidden'); 
+                    PersistenceManager.save(); 
+                } 
+            });
+            document.body.addEventListener('input', (e) => {
+                if(e.target.classList.contains('quest-title') || e.target.classList.contains('quest-desc')) {
+                    PersistenceManager.triggerDebouncedSave();
+                }
+            });
+
+            document.querySelectorAll('input, textarea').forEach(el => { el.addEventListener('blur', () => { const viewport = document.querySelector('meta[name="viewport"]'); if (viewport) { viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; setTimeout(() => { viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; }, 100); } }); });
+            document.querySelectorAll('.journal-tab').forEach(tab => { tab.addEventListener('click', () => SoundSystem.playTabTap()); });
+            updateTrashCount();
+            setInterval(() => { checkCelebration(); checkSurpriseEvent(); }, 1000);
+        });
+        
+        // [NEW] Manual Sync Logic (Seamless)
+        function manualSync() {
+            showToast("🔄 正在與雲端同步...");
+            if(isFirebaseActive) {
+                // If connected to Firebase, try fetching latest
+                PersistenceManager.fetch().then(success => {
+                    if(success) showToast("✅ 同步完成！");
+                    else showToast("ℹ️ 無法獲取雲端資料");
+                }).catch(() => {
+                    showToast("❌ 同步失敗，請檢查網路");
+                });
+            } else {
+                // Fallback for local testing
+                renderAllQuests();
+                showToast("✅ 畫面已重新整理 (本機)");
+            }
+        }
+        
+        // [NEW] Pull-to-refresh Logic
+        function initPullToRefresh() {
+            const pages = document.querySelectorAll('.day-page');
+            let touchStartY = 0;
+            const ptrThreshold = 80; // Distance to trigger refresh
+            const indicator = document.getElementById('ptr-indicator');
+            
+            pages.forEach(page => {
+                page.addEventListener('touchstart', e => {
+                    if (page.scrollTop === 0) {
+                        touchStartY = e.touches[0].clientY;
+                    }
+                }, {passive: true});
+
+                page.addEventListener('touchmove', e => {
+                    const y = e.touches[0].clientY;
+                    const diff = y - touchStartY;
+                    if (page.scrollTop === 0 && diff > 0) {
+                         // Simple visual feedback
+                         if (diff > ptrThreshold) {
+                             indicator.style.opacity = '1';
+                             indicator.style.transform = `translateY(45px)`; // Slide down
+                             indicator.innerText = "⬇️ 放開手指以更新";
+                         } else {
+                             indicator.style.opacity = '0.5';
+                             indicator.style.transform = `translateY(${Math.min(45, diff/2)}px)`;
+                             indicator.innerText = "⬇️ 下拉更新";
+                         }
+                    }
+                }, {passive: true});
+
+                page.addEventListener('touchend', e => {
+                     const y = e.changedTouches[0].clientY;
+                     const diff = y - touchStartY;
+                     
+                     // Reset indicator
+                     indicator.style.opacity = '0';
+                     indicator.style.transform = `translateY(-40px)`;
+                     
+                     if (page.scrollTop === 0 && diff > ptrThreshold) {
+                         manualSync(); // Trigger seamless sync
+                     }
+                });
+            });
+        }
+
+        // [OPTIMIZATION] Image Compression Helper
+        function compressImage(file, maxWidth, quality, callback) {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = event => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > maxWidth) {
+                        height = Math.round(height * (maxWidth / width));
+                        width = maxWidth;
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Output as JPEG with reduced quality OR blob if we wanted to upload binary
+                    // For Firebase Storage upload we want Blob for efficiency, but here we keep dataURL for compatibility flow
+                    // We'll convert to Blob in handlePhotoUpload if needed
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    callback(dataUrl);
+                };
+            };
+        }
+
+        // [PERSISTENCE] Modified Render Function
+        function renderAllQuests() {
+            for(let i=0; i<4; i++) {
+                renderQuestList(i);
+            }
+        }
+
+        function renderQuestList(dayIndex) {
+            const container = document.getElementById(`quest-list-${dayIndex}`);
+            if(!container) return;
+            
+            const isLocked = !forceUnlockDays && TimeManager.now() < unlockDates[dayIndex];
+            const addBtn = container.parentElement.querySelector('.add-quest-btn');
+            if (addBtn) {
+                if (isLocked) addBtn.classList.add('hidden');
+                else addBtn.classList.remove('hidden');
+            }
+
+            if (isLocked) {
+                container.innerHTML = `
+                    <div class="locked-placeholder">
+                        <i class="fas fa-lock text-3xl text-slate-300"></i>
+                        <span class="text-sm">此頁面尚未解鎖</span>
+                        <span class="text-xs font-mono text-slate-400">Unlock: ${unlockDates[dayIndex].toLocaleDateString()}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            if (container.querySelector('.locked-placeholder') || container.children.length === 0) {
+                container.innerHTML = '';
+                
+                let quests = PersistenceManager.load(dayIndex);
+                
+                if (!quests) {
+                    quests = QUEST_DB[dayIndex] || [];
+                    quests = quests.map(q => ({
+                        time: safeDecode(q.time),
+                        title: safeDecode(q.title),
+                        desc: safeDecode(q.desc),
+                        location: q.location ? safeDecode(q.location) : '', // [NEW] Load location
+                        completed: false,
+                        locked: false,
+                        manual: false,
+                        gender: '',
+                        photos: []
+                    }));
+                }
+
+                quests.forEach(q => {
+                    const div = document.createElement('div');
+                    div.className = `quest-item ${q.completed ? 'completed' : ''} ${q.locked ? 'locked' : ''}`;
+                    if(q.manual) div.setAttribute('data-manual', 'true');
+                    
+                    const genderClass = q.gender ? `data-gender="${q.gender}"` : '';
+                    
+                    let photosHtml = '';
+                    if(q.photos && q.photos.length > 0) {
+                        q.photos.forEach(photo => {
+                            const pGender = photo.gender ? `data-gender="${photo.gender}"` : '';
+                            photosHtml += `
+                                <div class="photo-thumbnail-wrapper" ${pGender} data-created="${photo.created || ''}" onclick="openPhotoModal(this)">
+                                    <img class="photo-thumbnail" src="${photo.src}">
+                                    <button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // [NEW] Location Button Logic
+                    let locationBtn = '';
+                    if(q.location && q.location.trim() !== '') {
+                        locationBtn = `<button class="ml-2 text-blue-400 hover:text-blue-600 transition-colors" onclick="openMapLocation('${q.location}')"><i class="fas fa-map-marker-alt"></i></button>`;
+                    }
+
+                    div.innerHTML = `
+                        <div class="quest-checkbox ${q.completed ? 'checked' : ''}" onclick="toggleTask(this)"><i class="fas fa-check"></i></div>
+                        <div class="quest-content" ${genderClass}>
+                            <div class="flex items-center gap-2 mb-1">
+                                <input type="time" class="quest-time-input" value="${q.time}">
+                                ${locationBtn} <!-- [NEW] Insert Location Button -->
+                                <button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <h4 class="quest-title" contenteditable="true">${q.title}</h4>
+                            <p class="quest-desc" contenteditable="true">${q.desc}</p>
+                            <div class="quest-photo-area">
+                                ${photosHtml}
+                                <label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label>
+                            </div>
+                        </div>
+                        <div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            updateQuestChain(container);
+        }
+
+        function handleStart() { 
+            // [NEW] Explicitly start music on "Start" button click
+            SoundSystem.init(); 
+            SoundSystem.startMusic();
+            
+            if (currentPlayer) { startTransitionSequence(currentPlayer.name); updateHeaderAvatar(currentPlayer.gender); } 
+            else { switchPage('page-setup'); } 
+            SoundSystem.playClick(); 
+        }
+
+        // [NEW] Open Map with specific location query
+        function openMapLocation(locationName) {
+            if(!locationName) return;
+            toggleMap(true);
+            document.getElementById('map-search-input').value = locationName;
+            searchMap();
+            SoundSystem.playClick();
+        }
+
+        function handleAdminTrigger() {
+            adminTapCount++;
+            SoundSystem.playTone(400 + (adminTapCount * 100), 'sine', 0.1, 0.2); 
+            if (adminTapTimer) clearTimeout(adminTapTimer);
+            adminTapTimer = setTimeout(() => { adminTapCount = 0; }, 500);
+            if (adminTapCount >= 7) { toggleAdminMode(); adminTapCount = 0; }
+        }
+
+        function toggleAdminMode() {
+            document.body.classList.toggle('admin-mode');
+            const isAdmin = document.body.classList.contains('admin-mode');
+            if (isAdmin) {
+                SoundSystem.playMagic(); showToast("🔧 開發者控制台已連線");
+            } else {
+                if(forceUnlockDays) { forceUnlockDays = false; toggleUnlockDays(true); }
+                if(forceUnlockMist) { forceUnlockMist = false; toggleUnlockMist(true); }
+                if(isCelebrating) { isCelebrating = false; toggleCelebrateTest(true); }
+                SoundSystem.playDelete(); showToast("🔒 開發者控制台已離線");
+            }
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        
+        function toggleUnlockDays(resetOnly = false) {
+            if(!resetOnly) forceUnlockDays = !forceUnlockDays;
+            const btn = document.getElementById('btn-unlock-days');
+            if (forceUnlockDays) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>已解鎖所有日期</span>`;
+                SoundSystem.playSuccess();
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fas fa-calendar-alt"></i> <span>解鎖日期限制</span>`;
+                if(!resetOnly) SoundSystem.playClick();
+            }
+            checkLocks(); 
+            renderAllQuests();
+        }
+
+        function toggleUnlockMist(resetOnly = false) {
+            if(!resetOnly) forceUnlockMist = !forceUnlockMist;
+            const btn = document.getElementById('btn-unlock-mist');
+            if (forceUnlockMist) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>已解除任務迷霧</span>`;
+                SoundSystem.playSuccess();
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fas fa-eye"></i> <span>解除任務迷霧</span>`;
+                if(!resetOnly) SoundSystem.playClick();
+            }
+            for(let i=0; i<4; i++) { const container = document.getElementById(`quest-list-${i}`); if(container) updateQuestChain(container); }
+        }
+        
+        function toggleCelebrateTest(resetOnly = false) {
+            if(!resetOnly) isCelebrating = !isCelebrating;
+            checkCelebration();
+            const btn = document.getElementById('btn-celebrate');
+            if (isCelebrating) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fas fa-stop-circle"></i> <span>停止煙火特效</span>`;
+                SoundSystem.playSuccess();
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fas fa-fire"></i> <span>啟動煙火特效</span>`;
+                if(!resetOnly) SoundSystem.playClick();
+            }
+        }
+
+        function updateQuestChain(container) {
+            const items = Array.from(container.querySelectorAll('.quest-item'));
+            let firstIncompleteFound = false;
+            items.forEach((item, index) => {
+                if (item.dataset.manual === 'true') { item.classList.remove('locked'); return; }
+                if (forceUnlockMist) { item.classList.remove('locked'); return; }
+                if (item.classList.contains('completed')) { item.classList.remove('locked'); return; }
+                if (!firstIncompleteFound) { firstIncompleteFound = true; if (item.classList.contains('locked')) { item.classList.remove('locked'); item.classList.add('anim-pop'); setTimeout(() => item.classList.remove('anim-pop'), 500); } } else { item.classList.add('locked'); }
+            });
+        }
+
+        function toggleProfile(show) {
+            const modal = document.getElementById('profile-modal'); modal.classList.toggle('open', show);
+            if(show) { SoundSystem.playClick(); switchMode('view'); if (currentPlayer) { document.getElementById('profile-name').innerText = currentPlayer.name; document.getElementById('edit-nickname').value = currentPlayer.name; updateHeaderAvatar(currentPlayer.gender); } }
+        }
+        function switchMode(mode) { document.querySelectorAll('.sidebar-section').forEach(el => el.classList.remove('active')); document.getElementById(`side-${mode}`).classList.add('active'); if(mode === 'edit') { tempEditGender = currentPlayer ? currentPlayer.gender : 'boy'; updateEditGenderUI(); } else if (mode === 'trash') { renderTrashList(); } }
+        function setEditGender(gender, el) { tempEditGender = gender; updateEditGenderUI(); SoundSystem.playClick(); }
+        function updateEditGenderUI() { document.getElementById('edit-boy').classList.remove('selected'); document.getElementById('edit-girl').classList.remove('selected'); if(tempEditGender === 'boy') { document.getElementById('edit-boy').classList.add('selected'); } else { document.getElementById('edit-girl').classList.add('selected'); } }
+        function saveProfile() { const newName = document.getElementById('edit-nickname').value; if(newName && tempEditGender) { currentPlayer = { id: Date.now(), name: newName, gender: tempEditGender }; localStorage.setItem('tainan_trip_player', JSON.stringify(currentPlayer)); document.getElementById('profile-name').innerText = newName; updateHeaderAvatar(tempEditGender); SoundSystem.playSuccess(); showToast("資料已更新 ✨"); switchMode('view'); } else { showToast("請輸入暱稱並選擇角色"); } }
+        function getSortableTime(timeStr) { if (!timeStr) return 0; const [h, m] = timeStr.split(':').map(Number); if (h < 5) return (h + 24) * 60 + m; return h * 60 + m; }
+        
+        function sortQuestList(container, clickedBtn) { 
+            const items = Array.from(container.querySelectorAll('.quest-item')); 
+            items.sort((a, b) => { const tA = a.querySelector('.quest-time-input') ? getSortableTime(a.querySelector('.quest-time-input').value) : 0; const tB = b.querySelector('.quest-time-input') ? getSortableTime(b.querySelector('.quest-time-input').value) : 0; return tA - tB; }); 
+            items.forEach(item => container.appendChild(item)); 
+            if(clickedBtn) clickedBtn.classList.add('hidden'); 
+            if(navigator.vibrate) navigator.vibrate(10); 
+            SoundSystem.playClick(); 
+            updateQuestChain(container); 
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+        
+        function checkCelebration() { const now = TimeManager.now(); const header = document.getElementById('main-header'); const overlay = document.getElementById('firework-overlay'); if (now >= anniversaryDate || isCelebrating) { document.body.classList.add('celebration-mode'); header.classList.add('celebrate'); overlay.classList.add('active'); } else { document.body.classList.remove('celebration-mode'); header.classList.remove('celebrate'); overlay.classList.remove('active'); } }
+        function initFireworkEngine() { const canvas = document.getElementById('firework-overlay'); if (!canvas) { return; } const ctx = canvas.getContext('2d'); let particles = []; function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } window.addEventListener('resize', resize); resize(); class Particle { constructor(x, y, color) { this.x = x; this.y = y; this.color = color; this.vx = (Math.random() - 0.5) * 6; this.vy = -(Math.random() * 5 + 5); this.life = 1.0; this.decay = 0.005 + Math.random() * 0.01; this.gravity = 0.1; } draw() { ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); } update() { this.vx *= 0.96; this.vy *= 0.96; this.vy += this.gravity; this.x += this.vx; this.y += this.vy; this.life -= this.decay; } } function createFirework() { if (!document.getElementById('firework-overlay').classList.contains('active')) return; const x = Math.random() * canvas.width; const y = canvas.height; const colors = ['#ffd700', '#ff8fab', '#ffffff', '#8ecae6']; const color = colors[Math.floor(Math.random() * colors.length)]; const explosionX = Math.random() * canvas.width; const explosionY = Math.random() * (canvas.height * 0.6); for (let i = 0; i < 30; i++) { const p = new Particle(explosionX, explosionY, color); p.vx = (Math.random() - 0.5) * 10; p.vy = (Math.random() - 0.5) * 10; particles.push(p); } } function animate() { ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over'; particles = particles.filter(p => p.life > 0); particles.forEach(p => { p.update(); p.draw(); }); if (Math.random() < 0.05) createFirework(); requestAnimationFrame(animate); } animate(); }
+        function switchPage(pageId) { document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active', 'fade-in'); }); const target = document.getElementById(pageId); if(target) { target.style.display = 'flex'; setTimeout(() => target.classList.add('active', 'fade-in'), 10); } document.getElementById('home-decor').style.display = (pageId === 'page-home') ? 'block' : 'none'; }
+        
+        // [MODIFIED] Setup Validation Logic
+        function selectAvatar(gender, el) { 
+            tempGender = gender; 
+            document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected')); 
+            el.classList.add('selected'); 
+            checkSetupValidity();
+            SoundSystem.playClick(); 
+        }
+
+        function checkSetupValidity() {
+            const nick = document.getElementById('nickname').value.trim();
+            const btn = document.getElementById('confirm-btn');
+            
+            if (tempGender && nick.length > 0) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+            }
+        }
+
+        function startTransitionSequence(name) { switchPage('page-transition'); document.getElementById('welcome-msg').innerText = `Preparing journey for ${name}...`; const loaderFill = document.getElementById('loader-fill'); loaderFill.style.width = '0%'; SoundSystem.playSuccess(); setTimeout(() => { loaderFill.style.width = '100%'; }, 50); setTimeout(() => { switchPage('page-main'); startCountdown(); checkLocks(); renderAllQuests(); }, 3500); }
+        
+        function confirmCharacter() { 
+            const nick = document.getElementById('nickname').value.trim(); 
+            if (!nick) {
+                showToast("請輸入暱稱");
+                return;
+            }
+            currentPlayer = { id: Date.now(), name: nick, gender: tempGender }; 
+            localStorage.setItem('tainan_trip_player', JSON.stringify(currentPlayer)); 
+            updateHeaderAvatar(tempGender); 
+            startTransitionSequence(nick); 
+        }
+
+        function updateHeaderAvatar(gender) { const icon = document.getElementById('header-avatar-icon'); const largeIcon = document.getElementById('profile-icon-large'); if(gender === 'boy') { if(icon) icon.className = 'fas fa-face-smile text-blue-500'; if(largeIcon) { largeIcon.innerHTML = '<i class="fas fa-face-smile text-blue-500"></i>'; largeIcon.style.borderColor = '#60a5fa'; } } else { if(icon) icon.className = 'fas fa-face-smile-wink text-pink-500'; if(largeIcon) { largeIcon.innerHTML = '<i class="fas fa-face-smile-wink text-pink-500"></i>'; largeIcon.style.borderColor = '#f472b6'; } } }
+        function startCountdown() { setInterval(() => { checkCelebration(); const now = TimeManager.now(); const d = anniversaryDate.getTime() - now.getTime(); if(d < 0) { document.getElementById('cd-days').innerText = "00"; document.getElementById('cd-hours').innerText = "00"; document.getElementById('cd-mins').innerText = "00"; document.getElementById('cd-secs').innerText = "00"; return; } document.getElementById('cd-days').innerText = String(Math.floor(d / 86400000)).padStart(2, '0'); document.getElementById('cd-hours').innerText = String(Math.floor((d % 86400000) / 3600000)).padStart(2, '0'); document.getElementById('cd-mins').innerText = String(Math.floor((d % 3600000) / 60000)).padStart(2, '0'); document.getElementById('cd-secs').innerText = String(Math.floor((d % 60000) / 1000)).padStart(2, '0'); const progress = Math.min(100, Math.max(0, (1 - d / (anniversaryDate.getTime() - new Date('2025-01-01').getTime())) * 100)); document.getElementById('progress-fill').style.width = `${progress}%`; }, 1000); }
+        function checkLocks() { const now = TimeManager.now(); unlockDates.forEach((date, i) => { const tab = document.getElementById(`tab-${i}`); if(forceUnlockDays || now >= date) { tab.classList.remove('locked'); const activePage = document.getElementById(`day-${i}`); if(activePage && activePage.classList.contains('active')) { document.getElementById('day-cover').classList.remove('active'); } } else { tab.classList.add('locked'); } }); }
+        function switchDayTab(idx, el) { if(el.classList.contains('locked')) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); SoundSystem.playError(); showToast("🤫 還沒到這一天喔！請再等等。"); setTimeout(() => el.classList.remove('shake'), 400); return; } document.querySelectorAll('.journal-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.day-page').forEach(p => p.classList.remove('active')); document.getElementById(`day-${idx}`).classList.add('active'); document.getElementById('day-cover').classList.remove('active'); renderQuestList(idx); }
+        
+        function addNewQuest(idx) { 
+            const container = document.getElementById(`quest-list-${idx}`); 
+            const div = document.createElement('div'); 
+            div.className = 'quest-item'; 
+            div.setAttribute('data-manual', 'true'); 
+            const userGender = currentPlayer ? currentPlayer.gender : ''; 
+            div.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+            div.dataset.created = new Date().toISOString();
+            div.dataset.version = "1";
+
+            const contentDivClass = "quest-content"; 
+            div.innerHTML = `<div class="quest-checkbox" onclick="toggleTask(this)"><i class="fas fa-check"></i></div><div class="${contentDivClass}" data-gender="${userGender}"><div class="flex items-center gap-2 mb-1"><input type="time" class="quest-time-input" value="12:00"><button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button></div><h4 class="quest-title" contenteditable="true">新的冒險任務</h4><p class="quest-desc" contenteditable="true">輸入任務說明...</p><div class="quest-photo-area"><label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label></div></div><div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div></div>`; 
+            container.appendChild(div); 
+            SoundSystem.playClick(); 
+            updateQuestChain(container);
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+
+        function toggleTask(checkbox) { 
+            const item = checkbox.closest('.quest-item'); 
+            if (item.classList.contains('locked')) return; 
+            const hasPhoto = item.querySelector('.photo-thumbnail'); 
+            if (!checkbox.classList.contains('checked') && !hasPhoto) { 
+                showToast("📸 請先拍張照紀念，才能完成任務喔！"); 
+                if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
+                SoundSystem.playError(); 
+                return; 
+            } 
+            checkbox.classList.toggle('checked'); 
+            item.classList.toggle('completed'); 
+            if(checkbox.classList.contains('checked')) { SoundSystem.playSuccess(); } else { SoundSystem.playClick(); } 
+            const container = item.closest('.quest-container'); 
+            updateQuestChain(container); 
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+        
+        function revealMystery(el) { const now = TimeManager.now(); const cover = el.querySelector('.mystery-cover'); if(forceUnlockDays || now.getHours() >= 18) cover.classList.add('revealed'); else showToast("未到開啟時間 (18:00)"); }
+        
+        function safeSavePhoto(file, callback) {
+            try {
+                const testKey = "__test_quota__";
+                localStorage.setItem(testKey, "1");
+                localStorage.removeItem(testKey);
+                
+                const reader = new FileReader(); 
+                reader.onload = (e) => { 
+                    try {
+                        callback(e.target.result);
+                    } catch(err) {
+                        if (err.name === 'QuotaExceededError') {
+                            showToast("⚠️ 儲存空間已滿！無法新增照片");
+                            SoundSystem.playError();
+                        }
+                    }
+                }; 
+                reader.readAsDataURL(file);
+            } catch (e) {
+                showToast("⚠️ 儲存空間已滿！建議刪除舊照片");
+                SoundSystem.playError();
+            }
+        }
+
+        function handlePhotoUpload(input) { 
+            const files = input.files; 
+            const photoArea = input.closest('.quest-photo-area'); 
+            if (files && files.length > 0) { 
+                SoundSystem.playShutter(); 
+                Array.from(files).forEach(file => { 
+                    // [MODIFIED] Revert to Base64 (Local Compression) mode
+                    // Compress: Max width 800px, 0.6 quality (~30-50KB)
+                    compressImage(file, 800, 0.6, (base64) => {
+                        try {
+                            const wrapper = document.createElement('div'); 
+                            wrapper.className = 'photo-thumbnail-wrapper'; 
+                            const userGender = currentPlayer ? currentPlayer.gender : ''; 
+                            wrapper.dataset.gender = userGender; 
+                            wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+                            wrapper.dataset.created = new Date().toISOString();
+    
+                            wrapper.onclick = function() { openPhotoModal(this); }; 
+                            wrapper.innerHTML = `<img class="photo-thumbnail" src="${base64}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
+                            photoArea.insertBefore(wrapper, input.parentElement); 
+                            showToast("照片已儲存！");
+                            
+                            // [SYNC] This saves the Base64 string directly to Firestore
+                            PersistenceManager.save(); 
+                        } catch (e) {
+                             showToast("⚠️ 儲存失敗：空間不足");
+                        }
+                    });
+                }); 
+            } 
+            input.value = ''; 
+        }
+
+        function deletePhoto(event, btn) { 
+            event.preventDefault(); 
+            event.stopPropagation(); 
+            const wrapper = btn.closest('.photo-thumbnail-wrapper');
+            wrapper.classList.add('hidden-temp');
+            
+            pendingPhotoDeletions.push({
+                element: wrapper,
+                timeout: setTimeout(() => {
+                    if(wrapper.parentNode) {
+                        wrapper.remove();
+                        PersistenceManager.save(); // [AUTO-SAVE] Confirm deletion
+                    }
+                }, 4000) 
+            });
+
+            SoundSystem.playDelete(); 
+            showUndoToast("🗑️ 照片已移除", "undoPhotoDelete");
+        }
+
+        function undoPhotoDelete() {
+            if (pendingPhotoDeletions.length > 0) {
+                const item = pendingPhotoDeletions.pop();
+                clearTimeout(item.timeout);
+                item.element.classList.remove('hidden-temp');
+                SoundSystem.playClick();
+                document.getElementById('toast').classList.remove('show');
+                // No need to save, state is reverted visually and never committed if timeout didn't fire
+            }
+        }
+
+        function deleteQuest(btn) { 
+            const item = btn.closest('.quest-item'); 
+            const container = item.closest('.quest-container'); 
+            const dayId = container.id.split('-')[2]; 
+            const timeVal = item.querySelector('.quest-time-input')?.value || ''; 
+            const titleVal = item.querySelector('.quest-title')?.innerText || ''; 
+            const descVal = item.querySelector('.quest-desc')?.innerText || ''; 
+            const photos = []; 
+            item.querySelectorAll('.photo-thumbnail').forEach(img => photos.push(img.src)); 
+            const deletedData = { id: Date.now(), dayIndex: dayId, time: timeVal, title: titleVal, desc: descVal, photos: photos }; 
+            deletedQuests.push(deletedData); 
+            updateTrashCount(); 
+            item.style.transition = 'all 0.3s ease'; item.style.opacity = '0'; item.style.transform = 'translateX(20px)'; 
+            setTimeout(() => { 
+                item.remove(); 
+                updateQuestChain(container); 
+                PersistenceManager.save(); // [AUTO-SAVE]
+            }, 300); 
+            SoundSystem.playDelete(); 
+            showUndoToast("🗑️ 已刪除任務", "undoQuestDelete"); 
+        }
+        
+        function undoDelete() { 
+            const undoType = document.getElementById('toast-undo-btn').dataset.action;
+            if (undoType === 'undoPhotoDelete') undoPhotoDelete();
+            else undoQuestDelete();
+        }
+
+        function undoQuestDelete() { if (deletedQuests.length > 0) { restoreQuestItem(deletedQuests.pop()); updateTrashCount(); SoundSystem.playClick(); document.getElementById('toast').classList.remove('show'); } }
+        function restoreFromTrash(id) { const index = deletedQuests.findIndex(q => q.id === id); if (index !== -1) { restoreQuestItem(deletedQuests.splice(index, 1)[0]); updateTrashCount(); renderTrashList(); SoundSystem.playSuccess(); showToast("已還原任務至行程表中"); } }
+        
+        function restoreQuestItem(data) { 
+            const container = document.getElementById(`quest-list-${data.dayIndex}`); 
+            if(!container) return; 
+            const div = document.createElement('div'); div.className = 'quest-item'; 
+            div.innerHTML = `<div class="quest-checkbox" onclick="toggleTask(this)"><i class="fas fa-check"></i></div><div class="quest-content"><div class="flex items-center gap-2 mb-1"><input type="time" class="quest-time-input" value="${data.time}"><button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button></div><h4 class="quest-title" contenteditable="true">${data.title}</h4><p class="quest-desc" contenteditable="true">${data.desc}</p><div class="quest-photo-area"><label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label></div></div><div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div></div>`; 
+            if (data.photos && data.photos.length > 0) { 
+                const photoArea = div.querySelector('.quest-photo-area'); const label = div.querySelector('label'); 
+                data.photos.forEach(src => { const wrapper = document.createElement('div'); wrapper.className = 'photo-thumbnail-wrapper'; wrapper.onclick = function() { openPhotoModal(this); }; wrapper.innerHTML = `<img class="photo-thumbnail" src="${src}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; photoArea.insertBefore(wrapper, label); }); 
+            } 
+            container.appendChild(div); 
+            sortQuestList(container); 
+            updateQuestChain(container); 
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+        
+        function updateTrashCount() { document.getElementById('trash-count').innerText = deletedQuests.length; }
+        function renderTrashList() { const list = document.getElementById('trash-list'); list.innerHTML = ''; if (deletedQuests.length === 0) { list.innerHTML = '<div class="text-center text-slate-400 mt-10 text-sm">沒有被刪除的任務</div>'; return; } deletedQuests.forEach(q => { const item = document.createElement('div'); item.className = 'trash-item'; item.innerHTML = `<div><div class="font-bold text-slate-700">${q.title || '未命名任務'}</div><div class="text-xs text-slate-400">Day ${parseInt(q.dayIndex)+1} - ${q.time}</div></div><div class="trash-restore-btn" onclick="restoreFromTrash(${q.id})"><i class="fas fa-undo-alt"></i></div>`; list.appendChild(item); }); }
+        
+        function toggleMap(show) { 
+            const overlay = document.getElementById('map-overlay');
+            if (show) { OfflineManager.updateStatus(navigator.onLine); }
+            overlay.classList.toggle('active', show); 
+        }
+        
+        function searchMap() { const query = document.getElementById('map-search-input').value; if(query) { document.getElementById('gmap-frame').src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`; if(navigator.vibrate) navigator.vibrate(20); } }
+        function locateUser() { const btn = document.getElementById('gps-btn'); const originalIcon = '<i class="fas fa-crosshairs"></i>'; btn.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-400"></i>'; showToast("正在獲取位置..."); if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { const lat = pos.coords.latitude; const lng = pos.coords.longitude; document.getElementById('gmap-frame').src = `https://maps.google.com/maps?q=${lat},${lng}&t=&z=16&ie=UTF8&iwloc=&output=embed`; btn.innerHTML = '<i class="fas fa-map-pin text-red-500 animate-bounce"></i>'; showToast("定位成功！"); setTimeout(() => btn.innerHTML = originalIcon, 3000); }, (err) => { showToast("無法定位：請確認權限開啟"); btn.innerHTML = originalIcon; }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }); } else { showToast("瀏覽器不支援定位功能"); btn.innerHTML = originalIcon; } }
+        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; document.getElementById('toast-undo-btn').classList.add('hidden'); t.classList.add('show'); if (toastTimeout) clearTimeout(toastTimeout); toastTimeout = setTimeout(() => t.classList.remove('show'), 3000); }
+        function showUndoToast(msg, actionType) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; const undoBtn = document.getElementById('toast-undo-btn'); undoBtn.classList.remove('hidden'); undoBtn.dataset.action = actionType || 'undoQuestDelete'; t.classList.add('show'); if (toastTimeout) clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { t.classList.remove('show'); }, 4000); }
+        function previewImage(input) { handlePhotoUpload(input); }
+        function openPhotoModal(wrapper) { const modal = document.getElementById('photo-view-modal'); document.getElementById('modal-img').src = wrapper.querySelector('img').src; const today = new Date().toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g, '.'); document.getElementById('meta-date-text').innerText = today; const gender = wrapper.dataset.gender; const polaroid = document.querySelector('.polaroid-large'); polaroid.classList.remove('boy-glow', 'girl-glow'); if (gender === 'boy') { polaroid.classList.add('boy-glow'); } else if (gender === 'girl') { polaroid.classList.add('girl-glow'); } const authorDiv = document.getElementById('modal-author'); if(authorDiv) authorDiv.style.display = 'none'; modal.classList.add('open'); }
+        function closePhotoModal() { document.getElementById('photo-view-modal').classList.remove('open'); }
+        function forceCelebration() { toggleProfile(false); isCelebrating = true; checkCelebration(); showToast("✨ 啟動跨年慶祝模式！"); }
+        function refreshApp() { location.reload(); }
+        function adminResetGame() {
+            if(confirm("⚠️ 警告：這將刪除所有雲端與本機資料（照片、打卡記錄、帳號），且無法復原！\n\n確定要執行嗎？")) {
+                PersistenceManager.resetCloud();
+                localStorage.clear();
+                setTimeout(() => location.reload(), 1000);
+            }
+        }
+        function resetApp() { if(confirm('重置後進度將消失，確定嗎？')) { localStorage.clear(); location.reload(); } }
+
+        // [NEW] Backup & Restore Functions
+        function exportData() {
+            try {
+                // Ensure latest state is saved first
+                PersistenceManager.save();
+                
+                const data = JSON.stringify(localStorage);
+                const blob = new Blob([data], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `tainan_backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast("✅ 備份檔案已下載");
+            } catch(e) {
+                showToast("❌ 備份失敗");
+            }
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = readEvent => {
+                    try {
+                        const data = JSON.parse(readEvent.target.result);
+                        if (confirm("這將覆蓋目前的進度，確定要還原嗎？")) {
+                            localStorage.clear();
+                            for (const key in data) {
+                                localStorage.setItem(key, data[key]);
+                            }
+                            location.reload();
+                        }
+                    } catch (err) {
+                        showToast("❌ 檔案格式錯誤，無法還原");
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+    </script>
+</body>
+</html>
