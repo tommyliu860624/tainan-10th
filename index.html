@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- PWA & Mobile Web App Optimization -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#fdfbf7">
+    <meta name="format-detection" content="telephone=no">
+    <!-- Icon for Add to Home Screen -->
+    <link rel="apple-touch-icon" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/svgs/solid/heart.svg">
+
+    <title>10週年台南行 - 互動冒險手冊</title>
+    
+    <!-- External Libraries (CDN) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        /* Base Fonts */
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Klee+One:wght@400;600&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Silkscreen&display=swap');
+
+        :root {
+            --bg-color: #fdfbf7;
+            --text-color: #2c3e50;
+            --primary-pink: #ff8fab;
+            --primary-blue: #8ecae6;
+            --header-height: 44px; 
+            --header-top-offset: max(40px, calc(env(safe-area-inset-top) + 10px)); 
+            --total-header-space: calc(var(--header-top-offset) + var(--header-height) + 20px);
+        }
+
+        /* Admin Mode Controls */
+        .admin-only { display: none !important; }
+        body.admin-mode .admin-only { display: flex !important; flex-direction: column !important; }
+        
+        body.admin-mode .profile-avatar-large {
+            border-color: #22c55e !important;
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.6);
+            animation: admin-pulse 2s infinite;
+        }
+        @keyframes admin-pulse {
+            0% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+            100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.4); }
+        }
+
+        .admin-panel {
+            background: #1e293b; border-radius: 12px; padding: 12px; margin-top: auto;
+            border: 1px solid #475569; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .admin-btn {
+            width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px;
+            font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; justify-content: flex-start;
+            gap: 10px; transition: all 0.2s; font-family: 'Roboto Mono', monospace; border: 1px solid transparent;
+        }
+        .admin-btn:last-child { margin-bottom: 0; }
+        .admin-btn:active { transform: scale(0.98); }
+        
+        .btn-tech-green { background: rgba(34, 197, 94, 0.1); color: #4ade80; border-color: rgba(34, 197, 94, 0.3); }
+        .btn-tech-green.active { background: #22c55e; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+        .btn-tech-blue { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border-color: rgba(56, 189, 248, 0.3); }
+        .btn-tech-blue.active { background: #0ea5e9; color: #fff; }
+        .btn-tech-yellow { background: rgba(250, 204, 21, 0.1); color: #facc15; border-color: rgba(250, 204, 21, 0.3); }
+        .btn-tech-yellow.active { background: #eab308; color: #fff; }
+        .btn-tech-purple { background: rgba(168, 85, 247, 0.1); color: #c084fc; border-color: rgba(168, 85, 247, 0.3); }
+
+        /* General & Layout */
+        html, body { height: 100%; width: 100%; background-color: var(--bg-color); color: var(--text-color); font-family: 'Zen Maru Gothic', 'Noto Sans TC', sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; transition: background-color 1s ease; }
+        body.celebration-mode { background-color: transparent; --text-color: #e2e8f0; }
+        body.celebration-mode .grid-bg { background-image: none; }
+        body.celebration-mode .quest-item { background: rgba(255, 255, 255, 0.95); color: #2c3e50; }
+        body.celebration-mode .day-title { background: rgba(255, 255, 255, 0.95); color: #2c3e50; border-color: #2c3e50; backdrop-filter: none; text-shadow: none; box-shadow: 0 4px 15px rgba(255,255,255,0.3); }
+
+        #firework-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 1.5s ease; z-index: -1; background: radial-gradient(circle at bottom, #1e1b4b 0%, #0f172a 100%); }
+        #firework-overlay.active { opacity: 1; }
+
+        input, textarea, select, .quest-desc { font-size: 16px !important; }
+        .quest-title { font-size: 1.1rem !important; font-weight: 800 !important; color: #0f172a !important; line-height: 1.3; display: block; outline: none; border-bottom: 1px solid transparent; }
+        .font-hand { font-family: 'Caveat', cursive; }
+        .grid-bg { background-image: linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px); background-size: 24px 24px; width: 100%; height: 100%; overflow-y: auto; position: relative; z-index: 1; }
+
+        .page { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; opacity: 0; transition: opacity 1.2s ease-in-out; flex-direction: column; z-index: 10; overflow: hidden; }
+        .page.active { display: flex; opacity: 1; }
+        .page-center { justify-content: center; align-items: center; padding-bottom: 6vh; }
+
+        .anim-up { animation: slideUpFade 1.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+        .delay-1 { animation-delay: 0.3s; } .delay-2 { animation-delay: 0.6s; } .delay-3 { animation-delay: 0.9s; }
+        @keyframes slideUpFade { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        
+        .badge-10 { background: var(--primary-pink); color: white; padding: 4px 16px; border-radius: 20px; transform: rotate(-3deg); border: 2px solid white; font-family: 'Caveat', cursive; font-size: 1.2rem; }
+        .main-title { font-size: 3.5rem; line-height: 1.1; color: #2d3436; text-shadow: 2px 2px 0 white; }
+        .start-btn { background: white; border: 2.5px solid var(--text-color); padding: 12px 40px; border-radius: 30px; font-size: 1.3rem; font-weight: 900; box-shadow: 4px 4px 0 var(--text-color); transition: transform 0.1s; }
+        .start-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--text-color); }
+        .input-sketchy { width: 100%; background: transparent; border: none; border-bottom: 2px solid #cbd5e1; padding: 8px; font-size: 1.2rem; text-align: center; outline: none; }
+        .avatar-option { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #cbd5e1; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; transition: all 0.2s; cursor: pointer; background: white; }
+        .avatar-option.selected { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(255, 143, 171, 0.3); }
+
+        .loader-bar-container { width: 200px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 10px; margin-top: 20px; overflow: hidden; position: relative; }
+        .loader-bar-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: var(--primary-pink); transition: width 3.5s linear; }
+
+        .header-bar { position: fixed; top: var(--header-top-offset); left: 50%; transform: translateX(-50%); width: 90%; max-width: 380px; height: var(--header-height); background: rgba(255, 255, 255, 0.95); border: 2px solid var(--text-color); border-radius: 50px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; overflow: hidden; transition: all 0.5s ease; }
+        .header-bar.celebrate { background: rgba(30, 41, 59, 0.8); border-color: #fbbf24; box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); backdrop-filter: blur(5px); }
+        .header-progress-bg { position: absolute; top: 0; left: 0; bottom: 0; width: 0%; background-image: repeating-linear-gradient(135deg, rgba(252, 231, 243, 0.5), rgba(252, 231, 243, 0.5) 10px, rgba(244, 114, 182, 0.2) 10px, rgba(244, 114, 182, 0.2) 15px); z-index: -1; transition: width 0.5s linear; border-right: 2px dashed rgba(236, 72, 153, 0.3); animation: moveStripe 20s linear infinite; }
+        @keyframes moveStripe { from { background-position: 0 0; } to { background-position: 50px 0; } }
+        .header-bar.celebrate .header-progress-bg { opacity: 0; }
+
+        .header-avatar { width: 34px; height: 34px; background: #fff; border: 2px solid var(--text-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; flex-shrink: 0; z-index: 10; overflow: hidden; position: relative; }
+        .header-info-row { flex: 1; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; gap: 8px; z-index: 10; height: 100%; transition: opacity 0.5s, transform 0.5s; }
+        .header-bar.celebrate .header-info-row { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+        .header-label-text { font-size: 0.85rem; font-weight: 700; color: #475569; letter-spacing: 0.5px; }
+        .header-bar.celebrate .header-label-text { color: #fff; }
+        .header-divider { width: 1px; height: 14px; background-color: #cbd5e1; }
+        .countdown-inline { display: flex; gap: 2px; align-items: baseline; }
+        .mini-time-box { font-family: 'Roboto Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--text-color); min-width: 20px; text-align: right; }
+        .header-bar.celebrate .mini-time-box { color: #fff; }
+        .unit-text { font-size: 0.65rem; color: #64748b; margin-right: 2px; }
+        .celebrate-text { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.8); font-family: 'Dancing Script', cursive; font-size: 1.4rem; color: #fbbf24; white-space: nowrap; opacity: 0; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-shadow: 0 2px 4px rgba(0,0,0,0.8); z-index: 20; pointer-events: none; }
+        .header-bar.celebrate .celebrate-text { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        .main-content { position: absolute; top: var(--total-header-space); bottom: 0; left: 0; width: 100%; overflow: hidden; padding-top: 12px; }
+        .journal-container { width: 100%; height: 100%; display: flex; flex-direction: column; padding: 0 12px; }
+        .journal-tabs { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: -2px; z-index: 5; padding: 0 4px; }
+        .journal-tab { width: 23%; padding: 5px 0; font-family: 'Caveat', cursive; font-weight: 700; font-size: 0.9rem; color: #64748b; background: #f1f5f9; border: 2px solid var(--text-color); border-bottom: none; border-radius: 8px 8px 0 0; cursor: pointer; position: relative; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; --rot: 0deg; --ty: 0px; transform: rotate(var(--rot)) translateY(var(--ty)); }
+        .journal-tab:nth-child(1) { --rot: -3deg; --ty: 2px; z-index: 1; background: #fce7f3; }
+        .journal-tab:nth-child(2) { --rot: 1deg; --ty: 1px; z-index: 2; background: #fef3c7; }
+        .journal-tab:nth-child(3) { --rot: -2deg; --ty: 3px; z-index: 3; background: #e0f2fe; }
+        .journal-tab:nth-child(4) { --rot: 2deg; --ty: 2px; z-index: 4; background: #dcfce7; }
+        .journal-tab.active { z-index: 20 !important; transform: rotate(0deg) translateY(-4px) scale(1.05) !important; background: #fff !important; color: #000 !important; font-weight: 900 !important; border-bottom: 2px solid #fff; padding-bottom: 8px; box-shadow: 0 -2px 5px rgba(0,0,0,0.05); }
+        .journal-tab.locked::after { content: '\f023'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: -4px; right: -4px; color: #94a3b8; font-size: 0.6rem; width: 14px; height: 14px; background: rgba(255,255,255,0.9); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        @keyframes shake-tab { 0%, 100% { transform: translateX(0) rotate(var(--rot)) translateY(var(--ty)); } 25% { transform: translateX(-4px) rotate(calc(var(--rot) - 3deg)) translateY(var(--ty)); } 75% { transform: translateX(4px) rotate(calc(var(--rot) + 3deg)) translateY(var(--ty)); } }
+        .shake { animation: shake-tab 0.4s ease-in-out; }
+        
+        .journal-paper { flex: 1; background: #fff; border: 2px solid var(--text-color); border-radius: 5px; box-shadow: 5px 5px 0 rgba(0,0,0,0.1); position: relative; overflow: hidden; margin-bottom: 15px; background-image: linear-gradient(#e2e8f0 1px, transparent 1px); background-size: 100% 28px; padding-top: 0; }
+        
+        #day-cover { display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 20px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); padding-bottom: 140px; z-index: 20; }
+        #day-cover.active { display: flex; animation: fadeInPage 0.5s ease-out; }
+        .cover-title { font-family: 'Dancing Script', cursive; font-size: 2rem; color: #fdfbf7; margin-bottom: 5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .cover-subtitle { font-family: 'Noto Sans TC', sans-serif; font-size: 0.9rem; color: #cbd5e1; letter-spacing: 1px; }
+        .day-page { display: none; height: 100%; overflow-y: auto; padding: 20px 15px 100px 15px; }
+        .day-page.active { display: block; animation: fadeInPage 0.4s ease-out; }
+        @keyframes fadeInPage { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* [MODIFIED] Day Title - Compact and Small */
+        .day-title { 
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            color: var(--text-color); 
+            background: rgba(255,255,255,0.95); 
+            display: block; 
+            width: fit-content; 
+            margin: 0 auto 8px auto; /* Reduced margin */
+            padding: 2px 12px; /* Reduced padding */
+            border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px; 
+            border: 2px solid var(--text-color); 
+            box-shadow: 2px 2px 0 rgba(0,0,0,0.1); 
+            position: relative; 
+            z-index: 5; 
+        }
+        
+        .quest-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 15px; position: relative; background: #fff; transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s, filter 0.3s; }
+        .quest-item.locked { filter: blur(4px) grayscale(0.8); opacity: 0.6; pointer-events: none; user-select: none; }
+        .quest-item.locked::after { content: '\f023'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2rem; color: #94a3b8; z-index: 10; text-shadow: 0 0 10px rgba(255,255,255,0.8); }
+        .quest-checkbox { width: 20px; height: 20px; border: 2px solid var(--text-color); border-radius: 5px; background: white; flex-shrink: 0; z-index: 1; margin-top: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .quest-checkbox.checked { background: var(--primary-pink); border-color: var(--primary-pink); }
+        .quest-checkbox.checked i { display: block; }
+        .quest-checkbox i { font-size: 0.7rem; color: white; display: none; }
+        
+        .quest-content { flex: 1; background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; position: relative; box-shadow: 2px 2px 5px rgba(0,0,0,0.03); transition: all 0.2s; overflow: hidden; }
+        /* Only apply color border if data-gender is present and not empty */
+        .quest-content[data-gender="boy"] { border: 2px solid #93c5fd; box-shadow: 0 0 8px rgba(147, 197, 253, 0.4); }
+        .quest-content[data-gender="girl"] { border: 2px solid #f9a8d4; box-shadow: 0 0 8px rgba(249, 168, 212, 0.4); }
+        
+        .quest-content.gold-glow { border: 2px solid #fbbf24; background: linear-gradient(135deg, #1e293b 0%, #312e81 100%); box-shadow: 0 0 20px rgba(251, 191, 36, 0.6); animation: pulse-gold 3s infinite; color: white; }
+        .quest-content.gold-glow .quest-title { color: #fbbf24 !important; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .quest-content.gold-glow .quest-desc { color: #e2e8f0 !important; }
+        @keyframes pulse-gold { 0% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); } 50% { box-shadow: 0 0 25px rgba(251, 191, 36, 0.7); } 100% { box-shadow: 0 0 10px rgba(251, 191, 36, 0.4); } }
+
+        .quest-item.completed .quest-content { opacity: 0.5; filter: grayscale(0.6); }
+        .quest-item.completed .quest-title { text-decoration: line-through; color: #94a3b8; }
+        .delete-quest-btn { color: #cbd5e1; cursor: pointer; padding: 12px; margin-top: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: color 0.2s; z-index: 5; }
+        .delete-quest-btn:hover { color: #ef4444; }
+        .quest-time-input { font-family: 'Roboto Mono', monospace; font-size: 16px; color: var(--primary-blue); font-weight: bold; background: #e0f2fe; display: inline-block; padding: 1px 8px; border-radius: 4px; width: auto; min-width: 95px; text-align: center; border: none; outline: none; cursor: pointer; }
+        .quest-content.gold-glow .quest-time-input { background: #4f46e5; color: #fff; border: 1px solid #fbbf24; }
+
+        .quest-desc { font-size: 16px; color: #94a3b8; margin-top: 4px; outline: none; border-bottom: 1px solid transparent; }
+        .quest-title:focus, .quest-desc:focus { border-bottom-color: var(--primary-blue); background: #f0f9ff; }
+        .sort-confirm-btn { width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 1.5px solid #fb923c; color: #fb923c; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; cursor: pointer; box-shadow: 0 2px 5px rgba(251, 146, 60, 0.2); transition: all 0.2s; animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .sort-confirm-btn:active { transform: scale(0.9); background: #fff7ed; }
+        .sort-confirm-btn.hidden { display: none; }
+        .quest-photo-area { margin-top: 8px; border-top: 1px dashed #e2e8f0; padding-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .add-photo-btn { color: #94a3b8; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border: 2px dashed #e2e8f0; border-radius: 5px; }
+        .add-photo-btn:hover { color: var(--primary-pink); border-color: var(--primary-pink); }
+        
+        .photo-thumbnail-wrapper { position: relative; width: 60px; height: 60px; background: white; padding: 3px; border: 1px solid #ddd; box-shadow: 2px 2px 5px rgba(0,0,0,0.1); transform: rotate(-3deg); cursor: pointer; transition: transform 0.2s; flex-shrink: 0; transition: all 0.3s ease; }
+        .photo-thumbnail-wrapper:hover { transform: scale(1.1) rotate(0deg); z-index: 5; }
+        .photo-thumbnail-wrapper[data-gender="boy"] { border: 3px solid #60a5fa; box-shadow: 0 0 8px rgba(96, 165, 250, 0.8); }
+        .photo-thumbnail-wrapper[data-gender="girl"] { border: 3px solid #f472b6; box-shadow: 0 0 8px rgba(244, 114, 182, 0.8); }
+        .photo-thumbnail-wrapper.hidden-temp { opacity: 0; transform: scale(0); pointer-events: none; width: 0; height: 0; padding: 0; margin: 0; border: none; }
+
+        .photo-thumbnail { width: 100%; height: 100%; object-fit: cover; border-radius: 2px; }
+        .delete-thumb-btn { position: absolute; top: -10px; right: -10px; background: #ef4444; color: white; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 2px solid white; cursor: pointer; z-index: 10; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .add-quest-btn { width: 100%; border: 2px dashed #cbd5e1; border-radius: 12px; padding: 12px; color: #94a3b8; font-weight: bold; cursor: pointer; text-align: center; margin-top: 10px; }
+        .add-quest-btn.hidden { display: none; } /* [FIX] Helper class to hide the button */
+
+        .map-fab-btn { position: fixed; bottom: 30px; right: 25px; width: 65px; height: 65px; background: white; border: 3px solid var(--text-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 4px 4px 0 rgba(0,0,0,0.15); font-size: 1.8rem; color: var(--primary-blue); z-index: 50; cursor: pointer; }
+        .map-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fdfbf7; z-index: 60; display: flex; flex-direction: column; clip-path: circle(0% at calc(100% - 57.5px) calc(100% - 62.5px)); transition: clip-path 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s step-end; visibility: hidden; }
+        .map-overlay.active { visibility: visible; clip-path: circle(150% at calc(100% - 57.5px) calc(100% - 62.5px)); transition: clip-path 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0s step-start; }
+        .close-map-btn { position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; background: white; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #475569; z-index: 70; cursor: pointer; }
+        .gps-btn { position: absolute; top: 85px; right: 20px; width: 45px; height: 45px; background: white; border: 2px solid var(--text-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: #475569; z-index: 70; cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.1); transition: all 0.2s; }
+        .gps-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.1); }
+        .map-search-bar { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 380px; display: flex; gap: 8px; z-index: 70; }
+        .search-input { flex: 1; height: 48px; padding: 0 20px; background: white; border: 2.5px solid var(--text-color); border-radius: 30px; font-size: 16px; font-weight: 700; box-shadow: 4px 4px 0 rgba(0,0,0,0.1); outline: none; width: 100%; }
+
+        #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(30, 30, 30, 0.95); color: white; padding: 12px 24px; border-radius: 30px; font-size: 0.95rem; opacity: 0; pointer-events: none; transition: all 0.3s; z-index: 200; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 10px; }
+        #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+        #toast-undo-btn { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 15px; padding: 2px 10px; font-size: 0.8rem; cursor: pointer; margin-left: 8px; transition: all 0.2s; }
+        #toast-undo-btn.hidden { display: none; }
+
+        .profile-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 200; visibility: hidden; opacity: 0; transition: 0.3s; display: flex; }
+        .profile-modal.open { visibility: visible; opacity: 1; }
+        .profile-card { width: 280px; height: 100%; background: #fdfbf7; padding: 20px; transform: translateX(-100%); transition: transform 0.3s ease-out; display: flex; flex-direction: column; border-right: 4px solid var(--primary-pink); overflow-y: auto; box-shadow: 5px 0 15px rgba(0,0,0,0.1); }
+        .profile-modal.open .profile-card { transform: translateX(0); }
+        .profile-avatar-large { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--text-color); background: white; margin: 10px auto 15px; display: flex; align-items: center; justify-content: center; font-size: 3rem; color: #2c3e50; box-shadow: 0 4px 6px rgba(0,0,0,0.05); flex-shrink: 0; cursor: pointer; transition: all 0.3s ease; }
+        .profile-avatar-large:active { transform: scale(0.95); transition: 0.1s; }
+        .sidebar-section { display: none; flex-direction: column; height: 100%; }
+        .sidebar-section.active { display: flex; }
+        .menu-btn { width: 100%; padding: 10px; margin-bottom: 10px; border: 1.5px solid #e2e8f0; border-radius: 12px; color: #64748b; font-weight: bold; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; background: white; }
+        .menu-btn:active { transform: scale(0.98); background: #f1f5f9; }
+        .edit-avatar-group { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; }
+        .edit-avatar-option { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #cbd5e1; display: flex; justify-content: center; align-items: center; font-size: 2rem; cursor: pointer; background: white; transition: all 0.2s; }
+        .edit-avatar-option.selected { transform: scale(1.1); box-shadow: 0 0 0 4px rgba(255, 143, 171, 0.3); }
+        .trash-list { flex: 1; overflow-y: auto; padding: 5px 0; }
+        .trash-item { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #64748b; }
+        .trash-restore-btn { color: var(--primary-blue); cursor: pointer; padding: 5px; font-size: 1rem; }
+
+        .photo-view-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 300; display: flex; align-items: center; justify-content: center; visibility: hidden; opacity: 0; transition: 0.5s; }
+        .photo-view-modal.open { visibility: visible; opacity: 1; }
+        .polaroid-large { background: white; aspect-ratio: 54/86; width: 75%; max-width: 320px; padding: 12px 12px 85px 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: scale(0.8) rotate(-5deg); opacity: 0; transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; border-radius: 4px; position: relative; }
+        .polaroid-large.boy-glow { box-shadow: 0 0 35px rgba(59, 130, 246, 0.6); border: 6px solid #60a5fa; }
+        .polaroid-large.girl-glow { box-shadow: 0 0 35px rgba(236, 72, 153, 0.6); border: 6px solid #f472b6; }
+        .photo-view-modal.open .polaroid-large { transform: scale(1) rotate(2deg); opacity: 1; }
+        .polaroid-large img { width: 100%; height: 100%; object-fit: cover; background: #222; border: 1px solid #eee; }
+        .polaroid-date-stamp { position: absolute; bottom: 95px; right: 20px; color: #ffad33; font-family: 'Silkscreen', cursive; font-size: 0.9rem; letter-spacing: 1px; text-shadow: 0 0 4px rgba(255, 173, 51, 0.8); opacity: 0.9; pointer-events: none; }
+
+        #envelope-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 500; display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.8s ease; }
+        #envelope-overlay.active { display: flex; opacity: 1; }
+        .envelope-container { width: 300px; height: 200px; position: relative; cursor: pointer; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .envelope-container:hover { transform: scale(1.05); }
+        .envelope-body { position: absolute; bottom: 0; left: 0; width: 100%; height: 100%; background: #e2e8f0; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; display: flex; align-items: center; justify-content: center; border: 2px solid #cbd5e1; }
+        .wax-seal { width: 60px; height: 60px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #7f1d1d; font-size: 24px; font-family: 'Caveat', cursive; border: 4px solid #b91c1c; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); z-index: 10; }
+        .envelope-flap { position: absolute; top: 0; left: 0; width: 100%; height: 50%; background: #cbd5e1; clip-path: polygon(0 0, 50% 100%, 100% 0); transform-origin: top; transition: transform 0.6s ease; z-index: 5; }
+        .envelope-container.open .envelope-flap { transform: rotateX(180deg); z-index: 1; }
+        .envelope-container.open .wax-seal { transform: scale(1.2); opacity: 0; transition: all 0.3s; }
+
+        .float-anim-slow { animation: float-icon 8s ease-in-out infinite; }
+        .float-anim-fast { animation: float-icon 4s ease-in-out infinite; }
+        @keyframes float-icon { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-15px); } }
+
+        /* [NEW] Locked State Placeholder */
+        .locked-placeholder {
+            padding: 40px 20px; text-align: center; color: #94a3b8;
+            border: 2px dashed #cbd5e1; border-radius: 12px; background: rgba(241, 245, 249, 0.5);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+        }
+
+        /* [NEW] Offline UI Components */
+        #offline-banner {
+            position: fixed; top: 0; left: 0; width: 100%; height: 36px; background: #f97316; color: white;
+            z-index: 1000; display: none; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); animation: slideDown 0.3s ease-out;
+        }
+        #offline-banner.active { display: flex; }
+        @keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+
+        .map-offline-placeholder {
+            display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center;
+            background: #f1f5f9; color: #64748b; text-align: center; padding: 20px;
+        }
+        .map-offline-placeholder.active { display: flex; }
+        .map-offline-icon { font-size: 3rem; margin-bottom: 15px; color: #cbd5e1; }
+        .map-offline-btn {
+            background: #fff; border: 2px solid #cbd5e1; padding: 10px 20px; border-radius: 25px;
+            font-weight: bold; margin-top: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #475569;
+        }
+
+        /* [NEW] Backup Area */
+        .backup-area { padding: 10px; margin-top: 10px; border-top: 1px dashed #e2e8f0; }
+        .backup-btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        .backup-btn { flex: 1; padding: 8px; border-radius: 8px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid #cbd5e1; background: white; color: #64748b; }
+        .backup-btn:active { background: #f1f5f9; }
+
+        /* [MODIFIED] Security Lock Screen with Compact & Optical Center */
+        #page-lock {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #fdfbf7; z-index: 9999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; padding: 20px;
+            transition: transform 0.6s cubic-bezier(0.8, 0, 0.2, 1);
+            /* Visual centering offset */
+            padding-bottom: 15vh;
+        }
+        #page-lock.unlocked { transform: translateY(-100%); pointer-events: none; }
+        
+        .lock-icon { font-size: 3.5rem; color: #ff8fab; margin-bottom: 10px; animation: pulse-lock 2s infinite; }
+        @keyframes pulse-lock { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        
+        .lock-title { font-family: 'Dancing Script', cursive; font-size: 2.5rem; color: #2c3e50; margin-bottom: 5px; }
+        .lock-subtitle { font-size: 0.9rem; color: #94a3b8; margin-bottom: 20px; letter-spacing: 1px; }
+        
+        .passcode-input {
+            width: 200px; height: 50px; text-align: center; font-size: 1.5rem; letter-spacing: 5px;
+            border: 2px solid #cbd5e1; border-radius: 25px; outline: none; background: white;
+            font-family: 'Roboto Mono', monospace; margin-bottom: 20px; transition: all 0.3s;
+        }
+        .passcode-input:focus { border-color: #ff8fab; box-shadow: 0 0 0 4px rgba(255, 143, 171, 0.2); }
+        .passcode-input.error { border-color: #ef4444; animation: shake-lock 0.4s; }
+        @keyframes shake-lock { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        
+        .unlock-btn {
+            background: #2c3e50; color: white; padding: 12px 40px; border-radius: 30px;
+            font-weight: bold; letter-spacing: 2px; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- [NEW] Lock Screen Gatekeeper -->
+    <section id="page-lock">
+        <div class="lock-icon"><i class="fas fa-heart"></i></div>
+        <h1 class="lock-title">Our Memory</h1>
+        <p class="lock-subtitle">請輸入屬於我們的紀念日 (MMDD)</p>
+        <input type="password" id="passcode" class="passcode-input" maxlength="4" placeholder="●●●●" inputmode="numeric">
+        <button class="unlock-btn" onclick="checkAccess()">解 鎖</button>
+    </section>
+
+    <canvas id="firework-overlay"></canvas>
+
+    <!-- [NEW] Offline Banner -->
+    <div id="offline-banner">
+        <i class="fas fa-wifi-slash mr-2"></i> 離線模式 - 功能可能受限
+    </div>
+
+    <div id="envelope-overlay" onclick="openEnvelope()">
+        <div class="envelope-container" id="envelope">
+            <div class="envelope-flap"></div>
+            <div class="envelope-body"><div class="wax-seal">10th</div></div>
+        </div>
+        <p class="text-white mt-12 font-mono text-sm tracking-widest animate-pulse">TAP TO OPEN</p>
+    </div>
+
+    <div class="grid-bg relative w-full">
+        <div id="home-decor">
+            <div class="absolute top-20 left-10 float-anim-slow" style="animation-delay: 0s;"><i class="fas fa-heart text-3xl text-pink-200 rotate-12 opacity-60"></i></div>
+            <div class="absolute bottom-40 right-10 float-anim-fast" style="animation-delay: 1s;"><i class="fas fa-camera text-4xl text-blue-200 -rotate-12 opacity-60"></i></div>
+            <div class="absolute top-32 right-12 float-anim-fast" style="animation-delay: 0.5s;"><i class="fas fa-star text-2xl text-yellow-200 rotate-45 opacity-60"></i></div>
+            <div class="absolute bottom-24 left-8 float-anim-slow" style="animation-delay: 2s;"><i class="fas fa-utensils text-2xl text-orange-200 -rotate-12 opacity-50"></i></div>
+            <div class="absolute top-1/2 left-4 float-anim-fast" style="animation-delay: 1.5s;"><i class="fas fa-map-signs text-3xl text-green-200 rotate-6 opacity-40"></i></div>
+            <div class="absolute top-16 right-1/3 float-anim-slow" style="animation-delay: 3s;"><i class="fas fa-cloud text-4xl text-white rotate-0 opacity-40"></i></div>
+            <div class="absolute bottom-1/3 right-6 float-anim-fast" style="animation-delay: 0.8s;"><i class="fas fa-music text-2xl text-purple-200 -rotate-6 opacity-50"></i></div>
+        </div>
+
+        <section id="page-home" class="page page-center active fade-in px-4">
+            <div class="text-center relative z-10">
+                <div class="badge-10 anim-up delay-1"><i class="fas fa-heart mr-1"></i>10th Anniversary</div>
+                <h1 class="main-title anim-up delay-2 my-4">台南<br>大冒險</h1>
+                <span class="text-slate-400 font-hand text-xl block anim-up delay-3">2025.12.31 - 2026.01.03</span>
+                <button onclick="handleStart()" class="start-btn text-slate-800 mt-8 anim-up delay-3">開始旅程 GO!</button>
+            </div>
+        </section>
+
+        <section id="page-setup" class="page page-center px-6">
+            <div class="w-full max-w-xs text-center bg-white/90 backdrop-blur-sm p-6 rounded-[2rem] border-2 border-slate-200 shadow-xl anim-pop">
+                <h2 class="text-xl font-bold mb-6 text-slate-700">選擇角色</h2>
+                <div class="flex justify-center gap-6 mb-8">
+                    <div class="avatar-option" onclick="selectAvatar('boy', this)"><i class="fas fa-face-smile text-blue-400"></i></div>
+                    <div class="avatar-option" onclick="selectAvatar('girl', this)"><i class="fas fa-face-smile-wink text-pink-400"></i></div>
+                </div>
+                <!-- [MODIFIED] Added oninput listener for validation -->
+                <input type="text" id="nickname" class="input-sketchy mb-8" placeholder="你的暱稱 (必填)" autocomplete="off" oninput="checkSetupValidity()">
+                <button onclick="confirmCharacter()" id="confirm-btn" class="w-full bg-slate-800 text-white font-bold py-3 rounded-xl opacity-50 transition-all" disabled>確認出發</button>
+            </div>
+        </section>
+
+        <section id="page-transition" class="page page-center bg-slate-900/90 backdrop-blur-sm z-50 text-white">
+            <div class="text-center anim-up flex flex-col items-center">
+                <div class="text-4xl mb-4 animate-bounce text-pink-400"><i class="fas fa-walking"></i></div>
+                <h2 class="text-2xl font-bold tracking-widest">旅程即將開始...</h2>
+                <p id="welcome-msg" class="text-sm text-slate-400 mt-4 font-mono"></p>
+                <div class="loader-bar-container"><div id="loader-fill" class="loader-bar-fill"></div></div>
+                <p class="text-[10px] text-slate-500 mt-2 uppercase tracking-tighter">Initializing Memories & Tainan Flavors</p>
+            </div>
+        </section>
+
+        <section id="page-main" class="page">
+            <header id="main-header" class="header-bar">
+                <div id="progress-fill" class="header-progress-bg"></div>
+                <div class="header-avatar" onclick="toggleProfile(true)"><i id="header-avatar-icon" class="fas fa-user"></i></div>
+                <div class="header-info-row">
+                    <span class="header-label-text">10th Anniversary</span>
+                    <div class="header-divider"></div>
+                    <div class="countdown-inline">
+                        <div class="mini-time-box"><span id="cd-days">00</span></div><span class="unit-text">d</span>
+                        <div class="mini-time-box"><span id="cd-hours">00</span></div><span class="unit-text">h</span>
+                        <div class="mini-time-box"><span id="cd-mins">00</span></div><span class="unit-text">m</span>
+                        <div class="mini-time-box" style="color:#ec4899"><span id="cd-secs">00</span></div><span class="unit-text">s</span>
+                    </div>
+                </div>
+                <div class="celebrate-text">Happy 10th Anniversary</div>
+            </header>
+
+            <main class="main-content">
+                <div class="journal-container">
+                    <div class="journal-tabs">
+                        <div class="journal-tab" id="tab-0" onclick="switchDayTab(0, this)">12/31</div>
+                        <div class="journal-tab" id="tab-1" onclick="switchDayTab(1, this)">1/1</div>
+                        <div class="journal-tab" id="tab-2" onclick="switchDayTab(2, this)">1/2</div>
+                        <div class="journal-tab" id="tab-3" onclick="switchDayTab(3, this)">1/3</div>
+                    </div>
+                    
+                    <div class="journal-paper">
+                        <div id="day-cover" class="active">
+                            <h3 class="cover-title">Adventure Begins Soon</h3>
+                            <p class="cover-subtitle">距離旅程啟動，還有一些時間...</p>
+                            <div class="mt-6 text-xs text-pink-100 border border-pink-400 px-4 py-1.5 rounded-full bg-pink-900/50 font-bold shadow-sm backdrop-blur-sm">
+                                <i class="fas fa-lock mr-1"></i> 請等到 12/31 再來打開喔！
+                            </div>
+                        </div>
+
+                        <!-- [UPDATED] Empty Containers for Dynamic Injection -->
+                        <div id="day-0" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 1: 跨年冒險夜</h3><div id="quest-list-0" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(0)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                        <div id="day-1" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 2: 10週年快樂</h3><div id="quest-list-1" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(1)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                        <div id="day-2" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 3: 共度良日</h3><div id="quest-list-2" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(2)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                        <div id="day-3" class="day-page"><h3 class="day-title text-center block mx-auto mb-6">Day 4: 永遠愛你</h3><div id="quest-list-3" class="quest-container"></div><button class="add-quest-btn" onclick="addNewQuest(3)"><i class="fas fa-plus mr-1"></i> 新增任務</button></div>
+                    </div>
+                </div>
+
+                <button class="map-fab-btn" onclick="toggleMap(true)"><i class="fas fa-map-marked-alt"></i></button>
+
+                <div id="map-overlay" class="map-overlay">
+                    <button class="close-map-btn" onclick="toggleMap(false)"><i class="fas fa-times"></i></button>
+                    
+                    <!-- [NEW] Offline Placeholder -->
+                    <div id="map-offline-placeholder" class="map-offline-placeholder">
+                        <i class="fas fa-wifi-slash map-offline-icon"></i>
+                        <h3 class="text-xl font-bold text-slate-700">目前無法連線</h3>
+                        <p class="text-sm mt-2">地圖功能需要網路連線才能運作。<br>請檢查您的網路設定。</p>
+                        <button class="map-offline-btn" onclick="window.open('https://www.google.com/maps', '_blank')">
+                            開啟 Google Maps App
+                        </button>
+                    </div>
+
+                    <div id="gps-btn" class="gps-btn" onclick="locateUser()"><i class="fas fa-crosshairs"></i></div>
+                    <iframe id="gmap-frame" src="https://maps.google.com/maps?q=台南火車站&t=&z=14&ie=UTF8&iwloc=&output=embed" frameborder="0" style="border:0; width: 100%; height: 100%;" allowfullscreen></iframe>
+                    <div class="map-search-bar">
+                        <input type="search" id="map-search-input" class="search-input" placeholder="搜尋台南景點/美食..." onkeypress="if(event.key==='Enter') searchMap()">
+                        <button class="search-btn" onclick="searchMap()"><i class="fas fa-search"></i></button>
+                    </div>
+                </div>
+            </main>
+        </section>
+
+        <div id="toast" class="flex items-center gap-3"><i class="fas fa-comment-dots"></i><span id="toast-msg">提示訊息</span><button id="toast-undo-btn" class="hidden bg-white/20 px-2 py-1 rounded text-xs border border-white/50 ml-2" onclick="undoDelete()">復原</button></div>
+
+        <div id="photo-view-modal" class="photo-view-modal" onclick="closePhotoModal()">
+            <div class="polaroid-large" onclick="event.stopPropagation()">
+                <img id="modal-img" src="">
+                <div class="polaroid-date-stamp" id="meta-date-text">2026.01.01</div>
+            </div>
+            <div id="modal-author"></div>
+        </div>
+
+        <div id="profile-modal" class="profile-modal" onclick="if(event.target === this) toggleProfile(false)">
+            <div class="profile-card">
+                <div class="text-right"><button onclick="toggleProfile(false)" class="text-slate-400 text-xl"><i class="fas fa-times"></i></button></div>
+                <div id="side-view" class="sidebar-section active mt-4">
+                    <div class="profile-avatar-large" id="profile-icon-large" onclick="handleAdminTrigger()"><i class="fas fa-user"></i></div>
+                    <div class="text-center mb-6"><h3 class="text-2xl font-bold mb-1 text-slate-900" id="profile-name">User</h3><p class="text-xs text-slate-400 font-mono">10th Anniversary Trip</p></div>
+                    <button onclick="switchMode('edit')" class="menu-btn"><i class="fas fa-pen text-slate-400"></i> 編輯資料</button>
+                    <button onclick="switchMode('trash')" class="menu-btn"><i class="fas fa-trash-restore text-slate-400"></i> 資源回收桶<span id="trash-count" class="text-xs bg-slate-200 px-2 py-0.5 rounded-full ml-auto">0</span></button>
+                    
+                    <div class="mb-6 border-t border-slate-100 pt-4 px-1">
+                        <label class="text-xs text-slate-400 font-bold ml-1 mb-2 block">音量設定</label>
+                        <div class="flex items-center gap-3 mb-3"><i class="fas fa-music text-slate-400 w-4 text-center"></i><input type="range" min="0" max="1" step="0.1" value="0.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-pink-400" oninput="SoundSystem.setBGMVolume(this.value)"></div>
+                        <div class="flex items-center gap-3"><i class="fas fa-volume-up text-slate-400 w-4 text-center"></i><input type="range" min="0" max="1" step="0.1" value="0.5" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-400" oninput="SoundSystem.setSFXVolume(this.value)"></div>
+                    </div>
+
+                    <!-- [NEW] Backup & Restore Section -->
+                    <div class="backup-area">
+                        <label class="text-xs text-slate-400 font-bold ml-1">資料安全</label>
+                        <div class="backup-btn-row">
+                            <button class="backup-btn" onclick="exportData()"><i class="fas fa-download"></i> 匯出備份檔</button>
+                            <button class="backup-btn" onclick="importData()"><i class="fas fa-upload"></i> 還原備份檔</button>
+                        </div>
+                    </div>
+
+                    <div class="w-full border-t border-slate-100 my-4"></div>
+                    <div class="mt-auto w-full admin-only pb-8">
+                        <div class="admin-panel">
+                            <div class="text-[10px] text-slate-400 font-bold mb-2 uppercase tracking-widest border-b border-slate-600 pb-1"><i class="fas fa-terminal mr-1"></i>Developer Console</div>
+                            <button onclick="toggleUnlockDays()" id="btn-unlock-days" class="admin-btn btn-tech-green"><i class="fas fa-calendar-alt"></i> <span>解鎖日期限制</span></button>
+                            <button onclick="toggleUnlockMist()" id="btn-unlock-mist" class="admin-btn btn-tech-blue"><i class="fas fa-eye"></i> <span>解除任務迷霧</span></button>
+                            <button onclick="toggleCelebrateTest()" id="btn-celebrate" class="admin-btn btn-tech-yellow"><i class="fas fa-fire"></i> <span>啟動煙火特效</span></button>
+                            <button onclick="triggerSurpriseSequence()" class="admin-btn btn-tech-purple"><i class="fas fa-gift"></i> 觸發跨年驚喜</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="side-edit" class="sidebar-section mt-4">
+                    <h3 class="text-xl font-bold text-center mb-6">修改資料</h3>
+                    <div class="edit-avatar-group">
+                        <div class="edit-avatar-option" id="edit-boy" onclick="setEditGender('boy', this)"><i class="fas fa-face-smile text-blue-400"></i></div>
+                        <div class="edit-avatar-option" id="edit-girl" onclick="setEditGender('girl', this)"><i class="fas fa-face-smile-wink text-pink-400"></i></div>
+                    </div>
+                    <div class="w-full px-1 mb-6"><label class="text-xs text-slate-400 font-bold ml-1">暱稱</label><input type="text" id="edit-nickname" class="input-sketchy text-left w-full mt-1" value=""></div>
+                    <div class="flex gap-3 w-full mt-auto pb-8"><button onclick="switchMode('view')" class="flex-1 py-2 border border-slate-300 text-slate-500 rounded-lg text-sm font-bold">取消</button><button onclick="saveProfile()" class="flex-1 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold shadow-lg">儲存</button></div>
+                </div>
+                <div id="side-trash" class="sidebar-section">
+                    <div class="flex items-center mb-4 border-b border-slate-100 pb-3"><button onclick="switchMode('view')" class="mr-3 text-slate-400 hover:text-slate-600"><i class="fas fa-chevron-left"></i></button><h3 class="text-lg font-bold text-slate-700">資源回收桶</h3></div>
+                    <div id="trash-list" class="trash-list"><div class="text-center text-slate-400 mt-10 text-sm">沒有被刪除的任務</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        //  FIREBASE CONFIGURATION (FUTURE USE)
+        //  將來升級即時同步時，我們會將 Firebase SDK 
+        //  與 Config 貼在這裡。目前使用 LocalStorage。
+        // ==========================================
+
+        // [SECURITY] Access Control Config
+        // 使用 Base64 編碼的 "0101" -> "MDEwMQ=="
+        // 這樣直接看原始碼時，不會第一眼就看到 0101
+        const ACCESS_CODE_HASH = "MDEwMQ=="; 
+        const ACCESS_KEY = "tainan_app_unlocked";
+
+        // [NEW] Security & Anti-Spoiler Module
+        
+        const QUEST_DB = {
+            0: [ // Day 1
+                { time: "14:19", title: "板橋車站 出發 🚅", desc: "搭乘高鐵 (833 車次) 往台南 (14:19-16:11)", location: "板橋車站" },
+                { time: "16:11", title: "高鐵台南站 轉乘", desc: "步行至「台鐵沙崙站」，轉乘沙崙線", location: "高鐵台南站" },
+                { time: "16:57", title: "抵達台南火車站", desc: "前往前站出口對面", location: "台南火車站" },
+                { time: "17:05", title: "詠心同行 取車 🛵", desc: "辦理取車手續 (前站出口對面)", location: "詠心同行" },
+                { time: "17:30", title: "泊樂行旅 Check-in 🏨", desc: "赤崁店放行李，稍作休息", location: "泊樂行旅赤崁店" },
+                { time: "18:15", title: "晚餐：瓦拉米鍋燒麵 🍜", desc: "老屋黃光氛圍，10 週年之旅的溫暖開場!", location: "Walami 瓦拉米" },
+                { time: "20:00", title: "國華街 / 神農街 🏮", desc: "買阿美嬤紅茶奶，逛日系文青選物店", location: "神農街" },
+                { time: "21:45", title: "宵夜時刻 🍗🍱🍟", desc: "大推阿力香雞排，台南經典鹽酥雞，帶回飯店好蒿爽爽", location: "700臺南市中西區金華路三段79號" },
+                { time: "23:00", title: "跨年倒數 ✨", desc: "準備好迎接新的一年了嗎?" },
+                { time: "01:00", title: "新年儀式：琴記牛肉湯 🥣", desc: "跨完年，散步出門喝碗熱湯", location: "琴記牛肉湯" }
+            ],
+            1: [ // Day 2
+                { time: "09:30", title: "早餐：阿杰蛋餅 + 吐司吐司 🍳", desc: "五妃街/健康路，雙拼方案超滿足", location: "阿杰手工蛋餅" },
+                { time: "10:45", title: "點心：懷舊小棧杏仁豆腐冰 🍧", desc: "五妃廟旁的經典好滋味", location: "懷舊小棧" },
+                { time: "12:00", title: "午餐：台南無名米糕 🍚", desc: "中山路巷弄，肉燥飯+滷味必點", location: "台南無名米糕" },
+                { time: "13:15", title: "質感選物：Ryme 🛍️", desc: "忠義路上的日系選物店", location: "Ryme" },
+                { time: "14:30", title: "青山茶行 + 叔炸甜不辣 🥤", desc: "買好茶與剛炸好的點心，準備前往海邊", location: "700臺南市中西區民生路二段117號1樓" },
+                { time: "16:00", title: "漁光島夕陽 🌅", desc: "還記得嗎?大學的我們也曾在這裡看夕陽呢!", location: "漁光島" },
+                { time: "18:30", title: "晚餐：阿村第二代牛肉湯 🥣", desc: "剛好回程順路吃保安路美食", location: "阿村第二代牛肉湯" },
+                { time: "20:00", title: "夜遊：河樂廣場 🌃", desc: "水影散步，享受夜晚涼風", location: "河樂廣場" }
+            ],
+            2: [ // Day 3
+                { time: "06:30", title: "早餐：幸福鍋貼 永福店 🥟", desc: "早起吃脆皮，在地人推薦", location: "幸福鍋貼永福店" },
+                { time: "08:00", title: "公務：中西區區公所 🏛️", desc: "辦理自然人憑證", location: "中西區區公所" },
+                { time: "09:00", title: "巷弄老時光：寮國咖啡 ☕", desc: "坐在騎樓喝杯炭焙咖啡，享受早晨寧靜", location: "700臺南市中西區中山路79巷60號" },
+                { time: "11:00", title: "拍照：林百貨頂樓神社 ⛩️", desc: "開門第一批，避開人潮", location: "林百貨" },
+                { time: "12:15", title: "午餐：粼粼 + 許願所 🍽️", desc: "現場排隊，等待時可逛隔壁許願所", location: "粼粼" },
+                { time: "14:00", title: "衛民街老宅聚落 🏘️", desc: "餐桌上的鹿早 ➔ 唐恩 ➔ 鹿早茶屋", location: "餐桌上的鹿早" },
+                { time: "17:00", title: "西市場之夜 🏮", desc: "情懷合作社、蜷尾家，感受夜晚氛圍", location: "西門商場（大菜市）" },
+                { time: "19:45", title: "晚餐：錦町燒餃 🥟", desc: "日式居酒屋風格煎餃", location: "錦町燒餃" },
+                { time: "21:00", title: "完美句點：謝家八寶冰 🍧", desc: "吃完煎餃走過去吃冰，再走回飯店", location: "謝家八寶冰" }
+            ],
+            3: [ // Day 4
+                { time: "08:30", title: "早餐：勝利早點 🥐", desc: "台南人氣早餐，蔥餅、豬肉蛋餅必點", location: "勝利早點" },
+                { time: "09:30", title: "整理行李 🧳", desc: "回房整理戰利品，準備退房" },
+                { time: "11:00", title: "退房 & 寄放行李 🏨", desc: "泊樂行旅退房 ➔ 詠心同行寄放" },
+                { time: "12:00", title: "甜點：Wakamodog ☕", desc: "週六限定，12點準時報到", location: "Wakamodog" },
+                { time: "13:45", title: "又又美 & 旭峯號 📸", desc: "復古相機店與老藥行巡禮", location: "又又美" },
+                { time: "15:15", title: "午餐：丹丹漢堡 成功店 🍔", desc: "南霸天經典美味", location: "丹丹漢堡成功店" },
+                { time: "16:30", title: "最終採買：葡吉 or 連得堂 🎁", desc: "羅宋麵包或煎餅當戰利品", location: "台南葡吉麵包店" },
+                { time: "17:30", title: "還車 & 取行李 🛵", desc: "回到詠心同行還車", location: "詠心同行" },
+                { time: "18:00", title: "賦歸：台南火車站 🚂", desc: "18:00-22:11 台南到台北，自強(3000) 146", location: "台南火車站" }
+            ]
+        };
+
+        function safeDecode(str) {
+            try { return decodeURIComponent(atob(str).split('').map(function(c) { return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2); }).join('')); } 
+            catch(e) { return str; } 
+        }
+
+        let currentPlayer = null;
+        let forceUnlockDays = false; 
+        let forceUnlockMist = false;
+        let isCelebrating = false; 
+
+        const anniversaryDate = new Date('2026-01-01T00:00:00');
+        const unlockDates = [
+            new Date('2025-12-31T00:00:00'),
+            new Date('2026-01-01T00:00:00'),
+            new Date('2026-01-02T00:00:00'),
+            new Date('2026-01-03T00:00:00')
+        ];
+        
+        let deletedQuests = []; 
+        let pendingPhotoDeletions = []; 
+        let deleteTimeout;
+        let toastTimeout;
+        let tempEditGender = null;
+        let tempGender = null; // [FIX] Explicitly declare
+        let isMapFirstOpen = true; 
+        let adminTapCount = 0;
+        let adminTapTimer;
+        let saveDebounceTimer;
+
+        // [PERSISTENCE] Persistence Manager - LocalStorage Version
+        // Note for Future Developer: Replace this object with Firebase calls for cloud sync.
+        const PersistenceManager = {
+            storageKey: 'tainan_trip_data',
+            
+            // Save current DOM state to LocalStorage
+            save: function() {
+                try {
+                    const allData = {};
+                    for(let i=0; i<4; i++) {
+                        const container = document.getElementById(`quest-list-${i}`);
+                        if(!container) continue;
+                        
+                        const quests = [];
+                        container.querySelectorAll('.quest-item').forEach(item => {
+                            // Extract data
+                            const timeVal = item.querySelector('.quest-time-input')?.value || '';
+                            const titleVal = item.querySelector('.quest-title')?.innerText || '';
+                            const descVal = item.querySelector('.quest-desc')?.innerText || '';
+                            const isCompleted = item.classList.contains('completed');
+                            const isLocked = item.classList.contains('locked');
+                            const manual = item.dataset.manual === 'true';
+                            const gender = item.querySelector('.quest-content')?.dataset.gender || '';
+                            
+                            // Photos
+                            const photos = [];
+                            item.querySelectorAll('.photo-thumbnail-wrapper').forEach(wrapper => {
+                                if(!wrapper.classList.contains('hidden-temp')) {
+                                    photos.push({
+                                        src: wrapper.querySelector('img').src,
+                                        gender: wrapper.dataset.gender || '',
+                                        created: wrapper.dataset.created || new Date().toISOString()
+                                    });
+                                }
+                            });
+
+                            quests.push({
+                                time: timeVal,
+                                title: titleVal,
+                                desc: descVal,
+                                completed: isCompleted,
+                                locked: isLocked,
+                                manual: manual,
+                                gender: gender,
+                                photos: photos
+                            });
+                        });
+                        allData[i] = quests;
+                    }
+                    
+                    // Save to LocalStorage
+                    localStorage.setItem(this.storageKey, JSON.stringify(allData));
+                    console.log('✅ Auto-saved successfully');
+                } catch(e) {
+                    console.error('Save failed:', e);
+                    if (e.name === 'QuotaExceededError') {
+                        showToast("⚠️ 儲存空間不足，部分資料可能未儲存");
+                    }
+                }
+            },
+
+            // Load data from LocalStorage or use Default
+            load: function(dayIndex) {
+                const raw = localStorage.getItem(this.storageKey);
+                if(raw) {
+                    try {
+                        const data = JSON.parse(raw);
+                        return data[dayIndex] || null;
+                    } catch(e) {
+                        console.error('Load failed:', e);
+                        return null;
+                    }
+                }
+                return null;
+            },
+
+            // Trigger safe debounced save (for text inputs)
+            triggerDebouncedSave: function() {
+                if(saveDebounceTimer) clearTimeout(saveDebounceTimer);
+                saveDebounceTimer = setTimeout(() => {
+                    this.save();
+                }, 500); // 500ms delay
+            }
+        };
+
+        window.onerror = function(msg, url, line, col, error) {
+            console.error("Global Error Caught:", msg, error);
+            showToast("⚠️ 發生異常，系統已自動修復");
+            return false; 
+        };
+
+        const TimeManager = {
+            serverOffset: 0,
+            isSynced: false,
+            async init() {
+                if (!navigator.onLine) { this.useLocalTime(); return; }
+                try {
+                    const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Taipei', { signal: AbortSignal.timeout(3000) });
+                    if (!res.ok) throw new Error("Time API Failed");
+                    const data = await res.json();
+                    const serverTime = new Date(data.datetime).getTime();
+                    const deviceTime = Date.now();
+                    this.serverOffset = serverTime - deviceTime;
+                    this.isSynced = true;
+                    console.log('✅ Time synced secure.');
+                } catch(e) {
+                    console.warn("⚠️ Time sync failed or timed out.");
+                    this.useLocalTime();
+                }
+            },
+            useLocalTime() { this.isSynced = false; this.serverOffset = 0; },
+            now() { return new Date(Date.now() + this.serverOffset); }
+        };
+
+        const OfflineManager = {
+            init() {
+                window.addEventListener('online', () => this.updateStatus(true));
+                window.addEventListener('offline', () => this.updateStatus(false));
+                this.updateStatus(navigator.onLine);
+            },
+            updateStatus(isOnline) {
+                const banner = document.getElementById('offline-banner');
+                const mapPlaceholder = document.getElementById('map-offline-placeholder');
+                const mapFrame = document.getElementById('gmap-frame');
+                if (isOnline) {
+                    banner.classList.remove('active');
+                    if (mapPlaceholder && mapFrame) { mapPlaceholder.classList.remove('active'); mapFrame.style.display = 'block'; }
+                    TimeManager.init();
+                } else {
+                    banner.classList.add('active');
+                }
+            }
+        };
+
+        const SoundSystem = {
+            ctx: null, masterGain: null, bgmGainNode: null, sfxGainNode: null, compressor: null,
+            isMuted: false, musicNextNoteTime: 0, musicSchedulerTimer: null, isPlayingMusic: false,
+            
+            init: function() { 
+                if(!this.ctx) { 
+                    window.AudioContext = window.AudioContext || window.webkitAudioContext; 
+                    this.ctx = new AudioContext(); 
+                    
+                    // [UPDATED] Audio Chain with Compressor for Mobile
+                    this.compressor = this.ctx.createDynamicsCompressor();
+                    this.compressor.threshold.value = -50;
+                    this.compressor.knee.value = 40;
+                    this.compressor.ratio.value = 12;
+                    this.compressor.attack.value = 0;
+                    this.compressor.release.value = 0.25;
+                    this.compressor.connect(this.ctx.destination);
+
+                    this.masterGain = this.ctx.createGain(); 
+                    this.masterGain.gain.value = 1.0; 
+                    this.masterGain.connect(this.compressor); 
+                    
+                    this.bgmGainNode = this.ctx.createGain(); 
+                    this.bgmGainNode.gain.value = 0.8; 
+                    this.bgmGainNode.connect(this.masterGain); 
+                    
+                    this.sfxGainNode = this.ctx.createGain(); 
+                    this.sfxGainNode.gain.value = 0.8; 
+                    this.sfxGainNode.connect(this.masterGain); 
+                } 
+                this.resumeCtx(); 
+            },
+            
+            resumeCtx: function() { if (this.ctx && this.ctx.state === 'suspended') { this.ctx.resume(); } },
+            
+            setBGMVolume: function(val) { 
+                if(this.bgmGainNode) { 
+                    // [UPDATED] Boost multiplier for mobile
+                    const boostedVal = parseFloat(val) * 3.0; 
+                    this.bgmGainNode.gain.setTargetAtTime(boostedVal, this.ctx.currentTime, 0.1); 
+                } 
+            },
+            
+            setSFXVolume: function(val) { 
+                if(this.sfxGainNode) { 
+                    const boostedVal = parseFloat(val) * 3.0; 
+                    this.sfxGainNode.gain.setTargetAtTime(boostedVal, this.ctx.currentTime, 0.1); 
+                    if (this.ctx.currentTime > 0.1) { this.playTone(1200, 'sine', 0.05, 0.05, 0.001, 0.03); } 
+                } 
+            },
+            
+            playTone: function(freq, type, duration, vol=0.3, attack=0.01, decay=0.1) { 
+                if(this.isMuted || !this.ctx) return; 
+                this.resumeCtx(); 
+                const osc = this.ctx.createOscillator(); 
+                const gain = this.ctx.createGain(); 
+                osc.type = type; 
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime); 
+                gain.gain.setValueAtTime(0, this.ctx.currentTime); 
+                // [UPDATED] Boost tone volume base
+                gain.gain.linearRampToValueAtTime(vol * 2.5, this.ctx.currentTime + attack); 
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + attack + decay); 
+                osc.connect(gain); 
+                gain.connect(this.sfxGainNode); 
+                osc.start(); 
+                osc.stop(this.ctx.currentTime + duration + 0.5); 
+            },
+            
+            playNoise: function(duration, vol=0.3, type='white') { 
+                if(this.isMuted || !this.ctx) return; 
+                this.resumeCtx(); 
+                const bufferSize = this.ctx.sampleRate * duration; 
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate); 
+                const data = buffer.getChannelData(0); 
+                let lastOut = 0; 
+                for (let i = 0; i < bufferSize; i++) { 
+                    if (type === 'white') { data[i] = Math.random() * 2 - 1; } 
+                    else { const white = Math.random() * 2 - 1; data[i] = (lastOut + (0.02 * white)) / 1.02; lastOut = data[i]; data[i] *= 3.5; } 
+                } 
+                const noise = this.ctx.createBufferSource(); 
+                noise.buffer = buffer; 
+                const filter = this.ctx.createBiquadFilter(); 
+                filter.type = 'bandpass'; 
+                filter.frequency.value = 1000; 
+                filter.Q.value = 1; 
+                const gain = this.ctx.createGain(); 
+                gain.gain.setValueAtTime(vol * 3.0, this.ctx.currentTime); // [UPDATED] Boost noise
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration); 
+                noise.connect(filter); 
+                filter.connect(gain); 
+                gain.connect(this.sfxGainNode); 
+                noise.start(); 
+            },
+            
+            playError: function() { if(this.isMuted) return; this.playTone(150, 'triangle', 0.1, 0.4, 0.01, 0.1); setTimeout(() => this.playTone(100, 'sine', 0.1, 0.4, 0.01, 0.15), 20); },
+            playClick: function() { if(this.isMuted) return; this.playTone(1200, 'sine', 0.05, 0.2, 0.001, 0.03); },
+            playTabTap: function() { if(this.isMuted) return; this.playTone(800, 'sine', 0.08, 0.3, 0.005, 0.05); },
+            playPageTurn: function() { if(this.isMuted) return; this.playNoise(0.15, 0.2); },
+            playSuccess: function() { if(this.isMuted) return; const notes = [523.25, 659.25, 783.99, 1046.50, 1174.66]; notes.forEach((freq, i) => { setTimeout(() => { this.playTone(freq, 'sine', 0.6, 0.2, 0.02, 0.3); }, i * 40); }); },
+            playDelete: function() { if(this.isMuted) return; this.playTone(400, 'triangle', 0.2, 0.25, 0.01, 0.2); setTimeout(() => this.playTone(200, 'triangle', 0.2, 0.25, 0.01, 0.2), 100); },
+            playShutter: function() { if(this.isMuted) return; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.frequency.setValueAtTime(2000, this.ctx.currentTime); osc.frequency.exponentialRampToValueAtTime(100, this.ctx.currentTime + 0.05); gain.gain.setValueAtTime(0.5, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05); osc.connect(gain); gain.connect(this.sfxGainNode); osc.start(); osc.stop(this.ctx.currentTime + 0.06); this.playNoise(0.08, 0.6); },
+            playMagic: function() { if(this.isMuted) return; const notes = [440, 554, 659, 880, 1108, 1318]; notes.forEach((freq, i) => { setTimeout(() => { this.playTone(freq, 'sine', 1.0, 0.1, 0.05, 0.8); }, i * 50); }); this.playNoise(1.5, 0.1, 'pink'); },
+            
+            bgmTempo: 110, currentChordIndex: 0, noteCounter: 0,
+            progressionNormal: [[261.63, 329.63, 392.00, 493.88], [220.00, 261.63, 329.63, 392.00], [174.61, 220.00, 261.63, 329.63], [196.00, 246.94, 293.66, 349.23]],
+            
+            startMusic: function() { if(this.isMuted || this.isPlayingMusic) return; this.isPlayingMusic = true; this.resumeCtx(); this.musicNextNoteTime = this.ctx.currentTime + 0.1; this.scheduleMusic(); },
+            
+            scheduleMusic: function() { if (!this.isPlayingMusic) return; const secondsPerBeat = 60.0 / this.bgmTempo; while (this.musicNextNoteTime < this.ctx.currentTime + 1.0) { this.playWaltzStep(this.musicNextNoteTime); this.musicNextNoteTime += secondsPerBeat; } this.musicSchedulerTimer = requestAnimationFrame(this.scheduleMusic.bind(this)); },
+            
+            playWaltzStep: function(time) { const chord = this.progressionNormal[this.currentChordIndex]; const beatInBar = this.noteCounter % 3; if (beatInBar === 0) { this.playNote(chord[0] / 2, time, 0.6, 'triangle'); if (this.noteCounter % 12 === 0) { this.currentChordIndex = (this.currentChordIndex + 1) % this.progressionNormal.length; } } else { const note = chord[Math.floor(Math.random() * 4)]; if(Math.random() > 0.2) { this.playNote(note * 2, time, 0.3, 'sine'); } } this.noteCounter++; },
+            
+            playNote: function(freq, time, duration, wave) { const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain(); osc.type = wave; osc.frequency.setValueAtTime(freq, time); gain.gain.setValueAtTime(0, time); gain.gain.linearRampToValueAtTime(0.25, time + 0.05); gain.gain.exponentialRampToValueAtTime(0.001, time + duration + 1.5); osc.connect(gain); gain.connect(this.bgmGainNode); osc.start(time); osc.stop(time + duration + 2.0); },
+            
+            stopMusic: function() { this.isPlayingMusic = false; if(this.musicSchedulerTimer) cancelAnimationFrame(this.musicSchedulerTimer); }
+        };
+
+        function triggerSurpriseSequence() { toggleProfile(false); const overlay = document.getElementById('envelope-overlay'); const envelope = document.getElementById('envelope'); overlay.classList.add('active'); envelope.classList.remove('open'); SoundSystem.playTabTap(); }
+        function openEnvelope() { const envelope = document.getElementById('envelope'); if (envelope.classList.contains('open')) return; envelope.classList.add('open'); SoundSystem.playPageTurn(); setTimeout(() => { SoundSystem.playMagic(); const overlay = document.getElementById('envelope-overlay'); overlay.classList.remove('active'); injectSurpriseQuest(); switchDayTab(0, document.getElementById('tab-0')); setTimeout(() => { const q = document.getElementById('quest-surprise'); if(q) q.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 500); }, 800); }
+        function checkSurpriseEvent() { const now = TimeManager.now(); const surpriseTime = new Date('2026-01-01T00:00:00'); if (now >= surpriseTime && !document.getElementById('quest-surprise')) { if (SoundSystem.ctx && SoundSystem.ctx.state === 'running') { const overlay = document.getElementById('envelope-overlay'); if (!overlay.classList.contains('active')) { triggerSurpriseSequence(); } } } }
+        function injectSurpriseQuest() { if (document.getElementById('quest-surprise')) return; const container = document.getElementById('quest-list-0'); if(!container) return; const div = document.createElement('div'); div.id = 'quest-surprise'; div.className = 'quest-item'; div.setAttribute('data-manual', 'true'); div.innerHTML = `<div class="quest-checkbox" onclick="toggleTask(this)"><i class="fas fa-check"></i></div><div class="quest-content gold-glow"><div class="flex items-center gap-2 mb-1"><input type="time" class="quest-time-input" value="00:00"><button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button></div><h4 class="quest-title" contenteditable="true">✨10 週年快樂✨</h4><p class="quest-desc" contenteditable="true">新的一年，請多多指教!</p><div class="quest-photo-area"><label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label></div></div><div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div></div>`; const questItems = container.querySelectorAll('.quest-item'); const beefSoup = questItems[questItems.length - 1]; if(beefSoup) { container.insertBefore(div, beefSoup); } else { container.insertBefore(div, container.lastElementChild); } div.classList.add('anim-pop'); setTimeout(() => div.classList.remove('anim-pop'), 500); }
+
+        // [SECURITY] Gatekeeper Check
+        function checkAccess() {
+            const input = document.getElementById('passcode');
+            // 驗證邏輯：比對 Base64 後的字串是否相符 (0101 -> MDEwMQ==)
+            // 這樣即使打開原始碼，也不會第一眼就看到 "0101"
+            if (btoa(input.value) === ACCESS_CODE_HASH) {
+                localStorage.setItem(ACCESS_KEY, "true");
+                document.getElementById('page-lock').classList.add('unlocked');
+                SoundSystem.init();
+                SoundSystem.startMusic();
+                SoundSystem.playSuccess();
+            } else {
+                input.classList.add('error');
+                SoundSystem.playError();
+                if(navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                setTimeout(() => input.classList.remove('error'), 400);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            OfflineManager.init();
+            
+            // 1. Check Security Gate
+            const isUnlocked = localStorage.getItem(ACCESS_KEY) === "true";
+            if (!isUnlocked) {
+                // Stay on lock screen
+            } else {
+                document.getElementById('page-lock').classList.add('unlocked');
+                SoundSystem.init();
+                SoundSystem.startMusic();
+            }
+
+            renderAllQuests(); 
+            const saved = localStorage.getItem('tainan_trip_player');
+            if(saved) { currentPlayer = JSON.parse(saved); handleStart(); }
+            initFireworkEngine();
+            
+            const enableAudio = () => { SoundSystem.init(); SoundSystem.startMusic(); document.removeEventListener('click', enableAudio); document.removeEventListener('touchstart', enableAudio); };
+            document.addEventListener('click', enableAudio); document.addEventListener('touchstart', enableAudio);
+            
+            document.body.addEventListener('change', (e) => { 
+                if (e.target.classList.contains('quest-time-input')) { 
+                    const btn = e.target.parentElement.querySelector('.sort-confirm-btn'); if (btn) btn.classList.remove('hidden'); 
+                    PersistenceManager.save(); 
+                } 
+            });
+            document.body.addEventListener('input', (e) => {
+                if(e.target.classList.contains('quest-title') || e.target.classList.contains('quest-desc')) {
+                    PersistenceManager.triggerDebouncedSave();
+                }
+            });
+
+            document.querySelectorAll('input, textarea').forEach(el => { el.addEventListener('blur', () => { const viewport = document.querySelector('meta[name="viewport"]'); if (viewport) { viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; setTimeout(() => { viewport.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover'; }, 100); } }); });
+            document.querySelectorAll('.journal-tab').forEach(tab => { tab.addEventListener('click', () => SoundSystem.playTabTap()); });
+            updateTrashCount();
+            setInterval(() => { checkCelebration(); checkSurpriseEvent(); }, 1000);
+        });
+
+        // [PERSISTENCE] Modified Render Function
+        function renderAllQuests() {
+            for(let i=0; i<4; i++) {
+                renderQuestList(i);
+            }
+        }
+
+        function renderQuestList(dayIndex) {
+            const container = document.getElementById(`quest-list-${dayIndex}`);
+            if(!container) return;
+            
+            const isLocked = !forceUnlockDays && TimeManager.now() < unlockDates[dayIndex];
+            const addBtn = container.parentElement.querySelector('.add-quest-btn');
+            if (addBtn) {
+                if (isLocked) addBtn.classList.add('hidden');
+                else addBtn.classList.remove('hidden');
+            }
+
+            if (isLocked) {
+                container.innerHTML = `
+                    <div class="locked-placeholder">
+                        <i class="fas fa-lock text-3xl text-slate-300"></i>
+                        <span class="text-sm">此頁面尚未解鎖</span>
+                        <span class="text-xs font-mono text-slate-400">Unlock: ${unlockDates[dayIndex].toLocaleDateString()}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            if (container.querySelector('.locked-placeholder') || container.children.length === 0) {
+                container.innerHTML = '';
+                
+                let quests = PersistenceManager.load(dayIndex);
+                
+                if (!quests) {
+                    quests = QUEST_DB[dayIndex] || [];
+                    quests = quests.map(q => ({
+                        time: safeDecode(q.time),
+                        title: safeDecode(q.title),
+                        desc: safeDecode(q.desc),
+                        location: q.location ? safeDecode(q.location) : '', // [NEW] Load location
+                        completed: false,
+                        locked: false,
+                        manual: false,
+                        gender: '',
+                        photos: []
+                    }));
+                }
+
+                quests.forEach(q => {
+                    const div = document.createElement('div');
+                    div.className = `quest-item ${q.completed ? 'completed' : ''} ${q.locked ? 'locked' : ''}`;
+                    if(q.manual) div.setAttribute('data-manual', 'true');
+                    
+                    const genderClass = q.gender ? `data-gender="${q.gender}"` : '';
+                    
+                    let photosHtml = '';
+                    if(q.photos && q.photos.length > 0) {
+                        q.photos.forEach(photo => {
+                            const pGender = photo.gender ? `data-gender="${photo.gender}"` : '';
+                            photosHtml += `
+                                <div class="photo-thumbnail-wrapper" ${pGender} data-created="${photo.created || ''}" onclick="openPhotoModal(this)">
+                                    <img class="photo-thumbnail" src="${photo.src}">
+                                    <button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // [NEW] Location Button Logic
+                    let locationBtn = '';
+                    if(q.location && q.location.trim() !== '') {
+                        locationBtn = `<button class="ml-2 text-blue-400 hover:text-blue-600 transition-colors" onclick="openMapLocation('${q.location}')"><i class="fas fa-map-marker-alt"></i></button>`;
+                    }
+
+                    div.innerHTML = `
+                        <div class="quest-checkbox ${q.completed ? 'checked' : ''}" onclick="toggleTask(this)"><i class="fas fa-check"></i></div>
+                        <div class="quest-content" ${genderClass}>
+                            <div class="flex items-center gap-2 mb-1">
+                                <input type="time" class="quest-time-input" value="${q.time}">
+                                ${locationBtn} <!-- [NEW] Insert Location Button -->
+                                <button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button>
+                            </div>
+                            <h4 class="quest-title" contenteditable="true">${q.title}</h4>
+                            <p class="quest-desc" contenteditable="true">${q.desc}</p>
+                            <div class="quest-photo-area">
+                                ${photosHtml}
+                                <label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label>
+                            </div>
+                        </div>
+                        <div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            updateQuestChain(container);
+        }
+
+        function handleStart() { 
+            // [NEW] Explicitly start music on "Start" button click
+            SoundSystem.init(); 
+            SoundSystem.startMusic();
+            
+            if (currentPlayer) { startTransitionSequence(currentPlayer.name); updateHeaderAvatar(currentPlayer.gender); } 
+            else { switchPage('page-setup'); } 
+            SoundSystem.playClick(); 
+        }
+
+        // [NEW] Open Map with specific location query
+        function openMapLocation(locationName) {
+            if(!locationName) return;
+            toggleMap(true);
+            document.getElementById('map-search-input').value = locationName;
+            searchMap();
+            SoundSystem.playClick();
+        }
+
+        function handleAdminTrigger() {
+            adminTapCount++;
+            SoundSystem.playTone(400 + (adminTapCount * 100), 'sine', 0.1, 0.2); 
+            if (adminTapTimer) clearTimeout(adminTapTimer);
+            adminTapTimer = setTimeout(() => { adminTapCount = 0; }, 500);
+            if (adminTapCount >= 7) { toggleAdminMode(); adminTapCount = 0; }
+        }
+
+        function toggleAdminMode() {
+            document.body.classList.toggle('admin-mode');
+            const isAdmin = document.body.classList.contains('admin-mode');
+            if (isAdmin) {
+                SoundSystem.playMagic(); showToast("🔧 開發者控制台已連線");
+            } else {
+                if(forceUnlockDays) { forceUnlockDays = false; toggleUnlockDays(true); }
+                if(forceUnlockMist) { forceUnlockMist = false; toggleUnlockMist(true); }
+                if(isCelebrating) { isCelebrating = false; toggleCelebrateTest(true); }
+                SoundSystem.playDelete(); showToast("🔒 開發者控制台已離線");
+            }
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
+        
+        function toggleUnlockDays(resetOnly = false) {
+            if(!resetOnly) forceUnlockDays = !forceUnlockDays;
+            const btn = document.getElementById('btn-unlock-days');
+            if (forceUnlockDays) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>已解鎖所有日期</span>`;
+                SoundSystem.playSuccess();
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fas fa-calendar-alt"></i> <span>解鎖日期限制</span>`;
+                if(!resetOnly) SoundSystem.playClick();
+            }
+            checkLocks(); 
+            renderAllQuests();
+        }
+
+        function toggleUnlockMist(resetOnly = false) {
+            if(!resetOnly) forceUnlockMist = !forceUnlockMist;
+            const btn = document.getElementById('btn-unlock-mist');
+            if (forceUnlockMist) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fas fa-check-circle"></i> <span>已解除任務迷霧</span>`;
+                SoundSystem.playSuccess();
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fas fa-eye"></i> <span>解除任務迷霧</span>`;
+                if(!resetOnly) SoundSystem.playClick();
+            }
+            for(let i=0; i<4; i++) { const container = document.getElementById(`quest-list-${i}`); if(container) updateQuestChain(container); }
+        }
+        
+        function toggleCelebrateTest(resetOnly = false) {
+            if(!resetOnly) isCelebrating = !isCelebrating;
+            checkCelebration();
+            const btn = document.getElementById('btn-celebrate');
+            if (isCelebrating) {
+                btn.classList.add('active');
+                btn.innerHTML = `<i class="fas fa-stop-circle"></i> <span>停止煙火特效</span>`;
+                SoundSystem.playSuccess();
+            } else {
+                btn.classList.remove('active');
+                btn.innerHTML = `<i class="fas fa-fire"></i> <span>啟動煙火特效</span>`;
+                if(!resetOnly) SoundSystem.playClick();
+            }
+        }
+
+        function updateQuestChain(container) {
+            const items = Array.from(container.querySelectorAll('.quest-item'));
+            let firstIncompleteFound = false;
+            items.forEach((item, index) => {
+                if (item.dataset.manual === 'true') { item.classList.remove('locked'); return; }
+                if (forceUnlockMist) { item.classList.remove('locked'); return; }
+                if (item.classList.contains('completed')) { item.classList.remove('locked'); return; }
+                if (!firstIncompleteFound) { firstIncompleteFound = true; if (item.classList.contains('locked')) { item.classList.remove('locked'); item.classList.add('anim-pop'); setTimeout(() => item.classList.remove('anim-pop'), 500); } } else { item.classList.add('locked'); }
+            });
+        }
+
+        function toggleProfile(show) {
+            const modal = document.getElementById('profile-modal'); modal.classList.toggle('open', show);
+            if(show) { SoundSystem.playClick(); switchMode('view'); if (currentPlayer) { document.getElementById('profile-name').innerText = currentPlayer.name; document.getElementById('edit-nickname').value = currentPlayer.name; updateHeaderAvatar(currentPlayer.gender); } }
+        }
+        function switchMode(mode) { document.querySelectorAll('.sidebar-section').forEach(el => el.classList.remove('active')); document.getElementById(`side-${mode}`).classList.add('active'); if(mode === 'edit') { tempEditGender = currentPlayer ? currentPlayer.gender : 'boy'; updateEditGenderUI(); } else if (mode === 'trash') { renderTrashList(); } }
+        function setEditGender(gender, el) { tempEditGender = gender; updateEditGenderUI(); SoundSystem.playClick(); }
+        function updateEditGenderUI() { document.getElementById('edit-boy').classList.remove('selected'); document.getElementById('edit-girl').classList.remove('selected'); if(tempEditGender === 'boy') { document.getElementById('edit-boy').classList.add('selected'); } else { document.getElementById('edit-girl').classList.add('selected'); } }
+        function saveProfile() { const newName = document.getElementById('edit-nickname').value; if(newName && tempEditGender) { currentPlayer = { id: Date.now(), name: newName, gender: tempEditGender }; localStorage.setItem('tainan_trip_player', JSON.stringify(currentPlayer)); document.getElementById('profile-name').innerText = newName; updateHeaderAvatar(tempEditGender); SoundSystem.playSuccess(); showToast("資料已更新 ✨"); switchMode('view'); } else { showToast("請輸入暱稱並選擇角色"); } }
+        function getSortableTime(timeStr) { if (!timeStr) return 0; const [h, m] = timeStr.split(':').map(Number); if (h < 5) return (h + 24) * 60 + m; return h * 60 + m; }
+        
+        function sortQuestList(container, clickedBtn) { 
+            const items = Array.from(container.querySelectorAll('.quest-item')); 
+            items.sort((a, b) => { const tA = a.querySelector('.quest-time-input') ? getSortableTime(a.querySelector('.quest-time-input').value) : 0; const tB = b.querySelector('.quest-time-input') ? getSortableTime(b.querySelector('.quest-time-input').value) : 0; return tA - tB; }); 
+            items.forEach(item => container.appendChild(item)); 
+            if(clickedBtn) clickedBtn.classList.add('hidden'); 
+            if(navigator.vibrate) navigator.vibrate(10); 
+            SoundSystem.playClick(); 
+            updateQuestChain(container); 
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+        
+        function checkCelebration() { const now = TimeManager.now(); const header = document.getElementById('main-header'); const overlay = document.getElementById('firework-overlay'); if (now >= anniversaryDate || isCelebrating) { document.body.classList.add('celebration-mode'); header.classList.add('celebrate'); overlay.classList.add('active'); } else { document.body.classList.remove('celebration-mode'); header.classList.remove('celebrate'); overlay.classList.remove('active'); } }
+        function initFireworkEngine() { const canvas = document.getElementById('firework-overlay'); if (!canvas) { return; } const ctx = canvas.getContext('2d'); let particles = []; function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; } window.addEventListener('resize', resize); resize(); class Particle { constructor(x, y, color) { this.x = x; this.y = y; this.color = color; this.vx = (Math.random() - 0.5) * 6; this.vy = -(Math.random() * 5 + 5); this.life = 1.0; this.decay = 0.005 + Math.random() * 0.01; this.gravity = 0.1; } draw() { ctx.globalAlpha = this.life; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); } update() { this.vx *= 0.96; this.vy *= 0.96; this.vy += this.gravity; this.x += this.vx; this.y += this.vy; this.life -= this.decay; } } function createFirework() { if (!document.getElementById('firework-overlay').classList.contains('active')) return; const x = Math.random() * canvas.width; const y = canvas.height; const colors = ['#ffd700', '#ff8fab', '#ffffff', '#8ecae6']; const color = colors[Math.floor(Math.random() * colors.length)]; const explosionX = Math.random() * canvas.width; const explosionY = Math.random() * (canvas.height * 0.6); for (let i = 0; i < 30; i++) { const p = new Particle(explosionX, explosionY, color); p.vx = (Math.random() - 0.5) * 10; p.vy = (Math.random() - 0.5) * 10; particles.push(p); } } function animate() { ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0, 0, 0, 0.1)'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalCompositeOperation = 'source-over'; particles = particles.filter(p => p.life > 0); particles.forEach(p => { p.update(); p.draw(); }); if (Math.random() < 0.05) createFirework(); requestAnimationFrame(animate); } animate(); }
+        function switchPage(pageId) { document.querySelectorAll('.page').forEach(p => { p.style.display = 'none'; p.classList.remove('active', 'fade-in'); }); const target = document.getElementById(pageId); if(target) { target.style.display = 'flex'; setTimeout(() => target.classList.add('active', 'fade-in'), 10); } document.getElementById('home-decor').style.display = (pageId === 'page-home') ? 'block' : 'none'; }
+        
+        // [MODIFIED] Setup Validation Logic
+        function selectAvatar(gender, el) { 
+            tempGender = gender; 
+            document.querySelectorAll('.avatar-option').forEach(opt => opt.classList.remove('selected')); 
+            el.classList.add('selected'); 
+            checkSetupValidity();
+            SoundSystem.playClick(); 
+        }
+
+        function checkSetupValidity() {
+            const nick = document.getElementById('nickname').value.trim();
+            const btn = document.getElementById('confirm-btn');
+            
+            if (tempGender && nick.length > 0) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            } else {
+                btn.disabled = true;
+                btn.classList.add('opacity-50');
+            }
+        }
+
+        function startTransitionSequence(name) { switchPage('page-transition'); document.getElementById('welcome-msg').innerText = `Preparing journey for ${name}...`; const loaderFill = document.getElementById('loader-fill'); loaderFill.style.width = '0%'; SoundSystem.playSuccess(); setTimeout(() => { loaderFill.style.width = '100%'; }, 50); setTimeout(() => { switchPage('page-main'); startCountdown(); checkLocks(); renderAllQuests(); }, 3500); }
+        
+        function confirmCharacter() { 
+            const nick = document.getElementById('nickname').value.trim(); 
+            if (!nick) {
+                showToast("請輸入暱稱");
+                return;
+            }
+            currentPlayer = { id: Date.now(), name: nick, gender: tempGender }; 
+            localStorage.setItem('tainan_trip_player', JSON.stringify(currentPlayer)); 
+            updateHeaderAvatar(tempGender); 
+            startTransitionSequence(nick); 
+        }
+
+        function updateHeaderAvatar(gender) { const icon = document.getElementById('header-avatar-icon'); const largeIcon = document.getElementById('profile-icon-large'); if(gender === 'boy') { if(icon) icon.className = 'fas fa-face-smile text-blue-500'; if(largeIcon) { largeIcon.innerHTML = '<i class="fas fa-face-smile text-blue-500"></i>'; largeIcon.style.borderColor = '#60a5fa'; } } else { if(icon) icon.className = 'fas fa-face-smile-wink text-pink-500'; if(largeIcon) { largeIcon.innerHTML = '<i class="fas fa-face-smile-wink text-pink-500"></i>'; largeIcon.style.borderColor = '#f472b6'; } } }
+        function startCountdown() { setInterval(() => { checkCelebration(); const now = TimeManager.now(); const d = anniversaryDate.getTime() - now.getTime(); if(d < 0) { document.getElementById('cd-days').innerText = "00"; document.getElementById('cd-hours').innerText = "00"; document.getElementById('cd-mins').innerText = "00"; document.getElementById('cd-secs').innerText = "00"; return; } document.getElementById('cd-days').innerText = String(Math.floor(d / 86400000)).padStart(2, '0'); document.getElementById('cd-hours').innerText = String(Math.floor((d % 86400000) / 3600000)).padStart(2, '0'); document.getElementById('cd-mins').innerText = String(Math.floor((d % 3600000) / 60000)).padStart(2, '0'); document.getElementById('cd-secs').innerText = String(Math.floor((d % 60000) / 1000)).padStart(2, '0'); const progress = Math.min(100, Math.max(0, (1 - d / (anniversaryDate.getTime() - new Date('2025-01-01').getTime())) * 100)); document.getElementById('progress-fill').style.width = `${progress}%`; }, 1000); }
+        function checkLocks() { const now = TimeManager.now(); unlockDates.forEach((date, i) => { const tab = document.getElementById(`tab-${i}`); if(forceUnlockDays || now >= date) { tab.classList.remove('locked'); const activePage = document.getElementById(`day-${i}`); if(activePage && activePage.classList.contains('active')) { document.getElementById('day-cover').classList.remove('active'); } } else { tab.classList.add('locked'); } }); }
+        function switchDayTab(idx, el) { if(el.classList.contains('locked')) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); SoundSystem.playError(); showToast("🤫 還沒到這一天喔！請再等等。"); setTimeout(() => el.classList.remove('shake'), 400); return; } document.querySelectorAll('.journal-tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.day-page').forEach(p => p.classList.remove('active')); document.getElementById(`day-${idx}`).classList.add('active'); document.getElementById('day-cover').classList.remove('active'); renderQuestList(idx); }
+        
+        function addNewQuest(idx) { 
+            const container = document.getElementById(`quest-list-${idx}`); 
+            const div = document.createElement('div'); 
+            div.className = 'quest-item'; 
+            div.setAttribute('data-manual', 'true'); 
+            const userGender = currentPlayer ? currentPlayer.gender : ''; 
+            div.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+            div.dataset.created = new Date().toISOString();
+            div.dataset.version = "1";
+
+            const contentDivClass = "quest-content"; 
+            div.innerHTML = `<div class="quest-checkbox" onclick="toggleTask(this)"><i class="fas fa-check"></i></div><div class="${contentDivClass}" data-gender="${userGender}"><div class="flex items-center gap-2 mb-1"><input type="time" class="quest-time-input" value="12:00"><button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button></div><h4 class="quest-title" contenteditable="true">新的冒險任務</h4><p class="quest-desc" contenteditable="true">輸入任務說明...</p><div class="quest-photo-area"><label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label></div></div><div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div></div>`; 
+            container.appendChild(div); 
+            SoundSystem.playClick(); 
+            updateQuestChain(container);
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+
+        function toggleTask(checkbox) { 
+            const item = checkbox.closest('.quest-item'); 
+            if (item.classList.contains('locked')) return; 
+            const hasPhoto = item.querySelector('.photo-thumbnail'); 
+            if (!checkbox.classList.contains('checked') && !hasPhoto) { 
+                showToast("📸 請先拍張照紀念，才能完成任務喔！"); 
+                if (navigator.vibrate) navigator.vibrate([50, 50, 50]); 
+                SoundSystem.playError(); 
+                return; 
+            } 
+            checkbox.classList.toggle('checked'); 
+            item.classList.toggle('completed'); 
+            if(checkbox.classList.contains('checked')) { SoundSystem.playSuccess(); } else { SoundSystem.playClick(); } 
+            const container = item.closest('.quest-container'); 
+            updateQuestChain(container); 
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+        
+        function revealMystery(el) { const now = TimeManager.now(); const cover = el.querySelector('.mystery-cover'); if(forceUnlockDays || now.getHours() >= 18) cover.classList.add('revealed'); else showToast("未到開啟時間 (18:00)"); }
+        
+        function safeSavePhoto(file, callback) {
+            try {
+                const testKey = "__test_quota__";
+                localStorage.setItem(testKey, "1");
+                localStorage.removeItem(testKey);
+                
+                const reader = new FileReader(); 
+                reader.onload = (e) => { 
+                    try {
+                        callback(e.target.result);
+                    } catch(err) {
+                        if (err.name === 'QuotaExceededError') {
+                            showToast("⚠️ 儲存空間已滿！無法新增照片");
+                            SoundSystem.playError();
+                        }
+                    }
+                }; 
+                reader.readAsDataURL(file);
+            } catch (e) {
+                showToast("⚠️ 儲存空間已滿！建議刪除舊照片");
+                SoundSystem.playError();
+            }
+        }
+
+        function handlePhotoUpload(input) { 
+            const files = input.files; 
+            const photoArea = input.closest('.quest-photo-area'); 
+            if (files && files.length > 0) { 
+                SoundSystem.playShutter(); 
+                Array.from(files).forEach(file => { 
+                    safeSavePhoto(file, (base64) => {
+                        const wrapper = document.createElement('div'); 
+                        wrapper.className = 'photo-thumbnail-wrapper'; 
+                        const userGender = currentPlayer ? currentPlayer.gender : ''; 
+                        wrapper.dataset.gender = userGender; 
+                        wrapper.dataset.author = currentPlayer ? currentPlayer.name : 'Unknown';
+                        wrapper.dataset.created = new Date().toISOString();
+
+                        wrapper.onclick = function() { openPhotoModal(this); }; 
+                        wrapper.innerHTML = `<img class="photo-thumbnail" src="${base64}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; 
+                        photoArea.insertBefore(wrapper, input.parentElement); 
+                        showToast("照片已儲存！現在可以打勾完成任務囉！");
+                        PersistenceManager.save(); // [AUTO-SAVE]
+                    });
+                }); 
+            } 
+            input.value = ''; 
+        }
+
+        function deletePhoto(event, btn) { 
+            event.preventDefault(); 
+            event.stopPropagation(); 
+            const wrapper = btn.closest('.photo-thumbnail-wrapper');
+            wrapper.classList.add('hidden-temp');
+            
+            pendingPhotoDeletions.push({
+                element: wrapper,
+                timeout: setTimeout(() => {
+                    if(wrapper.parentNode) {
+                        wrapper.remove();
+                        PersistenceManager.save(); // [AUTO-SAVE] Confirm deletion
+                    }
+                }, 4000) 
+            });
+
+            SoundSystem.playDelete(); 
+            showUndoToast("🗑️ 照片已移除", "undoPhotoDelete");
+        }
+
+        function undoPhotoDelete() {
+            if (pendingPhotoDeletions.length > 0) {
+                const item = pendingPhotoDeletions.pop();
+                clearTimeout(item.timeout);
+                item.element.classList.remove('hidden-temp');
+                SoundSystem.playClick();
+                document.getElementById('toast').classList.remove('show');
+                // No need to save, state is reverted visually and never committed if timeout didn't fire
+            }
+        }
+
+        function deleteQuest(btn) { 
+            const item = btn.closest('.quest-item'); 
+            const container = item.closest('.quest-container'); 
+            const dayId = container.id.split('-')[2]; 
+            const timeVal = item.querySelector('.quest-time-input')?.value || ''; 
+            const titleVal = item.querySelector('.quest-title')?.innerText || ''; 
+            const descVal = item.querySelector('.quest-desc')?.innerText || ''; 
+            const photos = []; 
+            item.querySelectorAll('.photo-thumbnail').forEach(img => photos.push(img.src)); 
+            const deletedData = { id: Date.now(), dayIndex: dayId, time: timeVal, title: titleVal, desc: descVal, photos: photos }; 
+            deletedQuests.push(deletedData); 
+            updateTrashCount(); 
+            item.style.transition = 'all 0.3s ease'; item.style.opacity = '0'; item.style.transform = 'translateX(20px)'; 
+            setTimeout(() => { 
+                item.remove(); 
+                updateQuestChain(container); 
+                PersistenceManager.save(); // [AUTO-SAVE]
+            }, 300); 
+            SoundSystem.playDelete(); 
+            showUndoToast("🗑️ 已刪除任務", "undoQuestDelete"); 
+        }
+        
+        function undoDelete() { 
+            const undoType = document.getElementById('toast-undo-btn').dataset.action;
+            if (undoType === 'undoPhotoDelete') undoPhotoDelete();
+            else undoQuestDelete();
+        }
+
+        function undoQuestDelete() { if (deletedQuests.length > 0) { restoreQuestItem(deletedQuests.pop()); updateTrashCount(); SoundSystem.playClick(); document.getElementById('toast').classList.remove('show'); } }
+        function restoreFromTrash(id) { const index = deletedQuests.findIndex(q => q.id === id); if (index !== -1) { restoreQuestItem(deletedQuests.splice(index, 1)[0]); updateTrashCount(); renderTrashList(); SoundSystem.playSuccess(); showToast("已還原任務至行程表中"); } }
+        
+        function restoreQuestItem(data) { 
+            const container = document.getElementById(`quest-list-${data.dayIndex}`); 
+            if(!container) return; 
+            const div = document.createElement('div'); div.className = 'quest-item'; 
+            div.innerHTML = `<div class="quest-checkbox" onclick="toggleTask(this)"><i class="fas fa-check"></i></div><div class="quest-content"><div class="flex items-center gap-2 mb-1"><input type="time" class="quest-time-input" value="${data.time}"><button class="sort-confirm-btn hidden" onclick="sortQuestList(this.closest('.quest-container'), this)"><i class="fas fa-sync-alt"></i></button></div><h4 class="quest-title" contenteditable="true">${data.title}</h4><p class="quest-desc" contenteditable="true">${data.desc}</p><div class="quest-photo-area"><label class="add-photo-btn"><i class="fas fa-camera"></i><input type="file" hidden multiple accept="image/*" onchange="handlePhotoUpload(this)"></label></div></div><div class="delete-quest-btn" onclick="deleteQuest(this)"><i class="fas fa-trash-alt"></i></div></div>`; 
+            if (data.photos && data.photos.length > 0) { 
+                const photoArea = div.querySelector('.quest-photo-area'); const label = div.querySelector('label'); 
+                data.photos.forEach(src => { const wrapper = document.createElement('div'); wrapper.className = 'photo-thumbnail-wrapper'; wrapper.onclick = function() { openPhotoModal(this); }; wrapper.innerHTML = `<img class="photo-thumbnail" src="${src}"><button class="delete-thumb-btn" onclick="deletePhoto(event, this)">&times;</button>`; photoArea.insertBefore(wrapper, label); }); 
+            } 
+            container.appendChild(div); 
+            sortQuestList(container); 
+            updateQuestChain(container); 
+            PersistenceManager.save(); // [AUTO-SAVE]
+        }
+        
+        function updateTrashCount() { document.getElementById('trash-count').innerText = deletedQuests.length; }
+        function renderTrashList() { const list = document.getElementById('trash-list'); list.innerHTML = ''; if (deletedQuests.length === 0) { list.innerHTML = '<div class="text-center text-slate-400 mt-10 text-sm">沒有被刪除的任務</div>'; return; } deletedQuests.forEach(q => { const item = document.createElement('div'); item.className = 'trash-item'; item.innerHTML = `<div><div class="font-bold text-slate-700">${q.title || '未命名任務'}</div><div class="text-xs text-slate-400">Day ${parseInt(q.dayIndex)+1} - ${q.time}</div></div><div class="trash-restore-btn" onclick="restoreFromTrash(${q.id})"><i class="fas fa-undo-alt"></i></div>`; list.appendChild(item); }); }
+        
+        function toggleMap(show) { 
+            const overlay = document.getElementById('map-overlay');
+            if (show) { OfflineManager.updateStatus(navigator.onLine); }
+            overlay.classList.toggle('active', show); 
+        }
+        
+        function searchMap() { const query = document.getElementById('map-search-input').value; if(query) { document.getElementById('gmap-frame').src = `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`; if(navigator.vibrate) navigator.vibrate(20); } }
+        function locateUser() { const btn = document.getElementById('gps-btn'); const originalIcon = '<i class="fas fa-crosshairs"></i>'; btn.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-400"></i>'; showToast("正在獲取位置..."); if (navigator.geolocation) { navigator.geolocation.getCurrentPosition((pos) => { const lat = pos.coords.latitude; const lng = pos.coords.longitude; document.getElementById('gmap-frame').src = `https://maps.google.com/maps?q=${lat},${lng}&t=&z=16&ie=UTF8&iwloc=&output=embed`; btn.innerHTML = '<i class="fas fa-map-pin text-red-500 animate-bounce"></i>'; showToast("定位成功！"); setTimeout(() => btn.innerHTML = originalIcon, 3000); }, (err) => { showToast("無法定位：請確認權限開啟"); btn.innerHTML = originalIcon; }, { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }); } else { showToast("瀏覽器不支援定位功能"); btn.innerHTML = originalIcon; } }
+        function showToast(msg) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; document.getElementById('toast-undo-btn').classList.add('hidden'); t.classList.add('show'); if (toastTimeout) clearTimeout(toastTimeout); toastTimeout = setTimeout(() => t.classList.remove('show'), 3000); }
+        function showUndoToast(msg, actionType) { const t = document.getElementById('toast'); document.getElementById('toast-msg').innerText = msg; const undoBtn = document.getElementById('toast-undo-btn'); undoBtn.classList.remove('hidden'); undoBtn.dataset.action = actionType || 'undoQuestDelete'; t.classList.add('show'); if (toastTimeout) clearTimeout(toastTimeout); toastTimeout = setTimeout(() => { t.classList.remove('show'); }, 4000); }
+        function previewImage(input) { handlePhotoUpload(input); }
+        function openPhotoModal(wrapper) { const modal = document.getElementById('photo-view-modal'); document.getElementById('modal-img').src = wrapper.querySelector('img').src; const today = new Date().toLocaleDateString('zh-TW', {year:'numeric', month:'2-digit', day:'2-digit'}).replace(/\//g, '.'); document.getElementById('meta-date-text').innerText = today; const gender = wrapper.dataset.gender; const polaroid = document.querySelector('.polaroid-large'); polaroid.classList.remove('boy-glow', 'girl-glow'); if (gender === 'boy') { polaroid.classList.add('boy-glow'); } else if (gender === 'girl') { polaroid.classList.add('girl-glow'); } const authorDiv = document.getElementById('modal-author'); if(authorDiv) authorDiv.style.display = 'none'; modal.classList.add('open'); }
+        function closePhotoModal() { document.getElementById('photo-view-modal').classList.remove('open'); }
+        function forceCelebration() { toggleProfile(false); isCelebrating = true; checkCelebration(); showToast("✨ 啟動跨年慶祝模式！"); }
+        function resetApp() { if(confirm('重置後進度將消失，確定嗎？')) { localStorage.clear(); location.reload(); } }
+
+        // [NEW] Backup & Restore Functions
+        function exportData() {
+            try {
+                // Ensure latest state is saved first
+                PersistenceManager.save();
+                
+                const data = JSON.stringify(localStorage);
+                const blob = new Blob([data], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `tainan_backup_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast("✅ 備份檔案已下載");
+            } catch(e) {
+                showToast("❌ 備份失敗");
+            }
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = readEvent => {
+                    try {
+                        const data = JSON.parse(readEvent.target.result);
+                        if (confirm("這將覆蓋目前的進度，確定要還原嗎？")) {
+                            localStorage.clear();
+                            for (const key in data) {
+                                localStorage.setItem(key, data[key]);
+                            }
+                            location.reload();
+                        }
+                    } catch (err) {
+                        showToast("❌ 檔案格式錯誤，無法還原");
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+    </script>
+</body>
+</html>
